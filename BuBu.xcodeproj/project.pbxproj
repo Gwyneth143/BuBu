@@ -6,13 +6,33 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8584BF612F590100007D1001 /* Mantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8584BF602F590100007D1002 /* Mantis */; };
+		85FDD2A92F89527E0020D857 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 85A4BD412F583910007CFF02 /* Kingfisher */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		85A4BCF02F58357D007CFF43 /* BuBu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BuBu.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		85A4BD322F58390A007CFF43 /* Exceptions for "BuBu" folder in "BuBu" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Package.swift,
+				Sources/Core/Persistence/SwiftDataDocumentStore.swift,
+			);
+			target = 85A4BCEF2F58357D007CFF43 /* BuBu */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		85A4BCF22F58357D007CFF43 /* BuBu */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				85A4BD322F58390A007CFF43 /* Exceptions for "BuBu" folder in "BuBu" target */,
+			);
 			path = BuBu;
 			sourceTree = "<group>";
 		};
@@ -23,6 +43,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8584BF612F590100007D1001 /* Mantis in Frameworks */,
+				85FDD2A92F89527E0020D857 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +87,8 @@
 			);
 			name = BuBu;
 			packageProductDependencies = (
+				8584BF602F590100007D1002 /* Mantis */,
+				85A4BD412F583910007CFF02 /* Kingfisher */,
 			);
 			productName = BuBu;
 			productReference = 85A4BCF02F58357D007CFF43 /* BuBu.app */;
@@ -91,9 +115,14 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = 85A4BCE72F58357D007CFF43;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8584BF602F590100007D1001 /* XCRemoteSwiftPackageReference "Mantis" */,
+				85A4BD412F583910007CFF01 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 85A4BCF12F58357D007CFF43 /* Products */;
 			projectDirPath = "";
@@ -177,7 +206,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -234,7 +263,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -249,15 +278,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BuBu/BuBu.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CJMKUY6JVF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BuBu/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BuBu;
+				INFOPLIST_KEY_NSCameraUsageDescription = "需要访问相机用于扫描纸质单据并生成数字化档案";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -280,15 +315,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BuBu/BuBu.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CJMKUY6JVF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BuBu/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BuBu;
+				INFOPLIST_KEY_NSCameraUsageDescription = "需要访问相机用于扫描纸质单据并生成数字化档案";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -328,6 +369,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8584BF602F590100007D1001 /* XCRemoteSwiftPackageReference "Mantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/guoyingtao/Mantis.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.31.1;
+			};
+		};
+		85A4BD412F583910007CFF01 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8584BF602F590100007D1002 /* Mantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8584BF602F590100007D1001 /* XCRemoteSwiftPackageReference "Mantis" */;
+			productName = Mantis;
+		};
+		85A4BD412F583910007CFF02 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 85A4BD412F583910007CFF01 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 85A4BCE82F58357D007CFF43 /* Project object */;
 }

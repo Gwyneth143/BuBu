@@ -18,25 +18,36 @@ final class SimpleTemplateEngine: TemplateEngine {
     func buildPages(from photoData: Data, checkup: CheckupRecord?, using template: NotebookPageTemplate) -> [NotebookPage] {
         var pages: [NotebookPage] = []
 
+//        let photoPage = NotebookPage(
+//            id: UUID(),
+//            date: Date(),
+//            type: .photo(PhotoAsset(id: UUID(), sourceIdentifier: nil, url: nil))
+//        )
+        let now = Date()
         let photoPage = NotebookPage(
             id: UUID(),
-            date: Date(),
-            type: .photo(PhotoAsset(id: UUID(), sourceIdentifier: nil, url: nil))
+            notebookID: 0,
+            createdAt: now,
+            updatedAt: now,
+            sortIndex: 0,
+            images: [],
+            note: "",
+            tag: ""
         )
         pages.append(photoPage)
 
-        if let checkup {
-            let summary = checkup.metrics
-                .map { "\($0.name)：\($0.value)\($0.unit ?? "")" }
-                .joined(separator: "\n")
-            let text = "检查：\(checkup.title)\n日期：\(checkup.date)\n\n\(summary)"
-            let summaryPage = NotebookPage(
-                id: UUID(),
-                date: checkup.date,
-                type: .note(text)
-            )
-            pages.append(summaryPage)
-        }
+//        if let checkup {
+//            let summary = checkup.metrics
+//                .map { "\($0.name)：\($0.value)\($0.unit ?? "")" }
+//                .joined(separator: "\n")
+//            let text = "检查：\(checkup.title)\n日期：\(checkup.date)\n\n\(summary)"
+//            let summaryPage = NotebookPage(
+//                id: UUID(),
+//                date: checkup.date,
+//                type: .note(text)
+//            )
+//            pages.append(summaryPage)
+//        }
 
         return pages
     }

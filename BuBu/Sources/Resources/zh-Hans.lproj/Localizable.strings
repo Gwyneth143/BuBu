@@ -1,0 +1,88 @@
+/* App & Tabs */
+"tab.library" = "书架";
+"tab.capture" = "采集";
+"tab.workshop" = "工坊";
+"tab.profile" = "我的";
+
+/* Bookshelf */
+"bookshelf.title" = "书架";
+"bookshelf.search_placeholder" = "搜索你的手账";
+"bookshelf.empty_title" = "书架是空的";
+"bookshelf.empty_hint" = "点击「+」开始你的第一本手账";
+"bookshelf.create_journal" = "创建手账";
+"bookshelf.category.all" = "全部";
+"bookshelf.category.travel" = "旅行";
+"bookshelf.category.family" = "家庭";
+"bookshelf.category.personal" = "个人";
+
+/* Create Journal */
+"create_journal.title" = "新建手账";
+"create_journal.journal_title" = "手账标题";
+"create_journal.title_placeholder" = "例如：我的孕期日记";
+"create_journal.choose_style" = "选择样式";
+"create_journal.style_solid" = "纯色";
+"create_journal.style_skins" = "皮肤";
+"create_journal.category" = "分类";
+"create_journal.add_category" = "添加新分类";
+"create_journal.add_category_subtitle" = "用自定义分类更好地整理你的想法。";
+"create_journal.category_name" = "分类名称";
+"create_journal.category_placeholder" = "输入分类名称...";
+"create_journal.create_btn" = "创建手账";
+"create_journal.new_category" = "新建分类";
+
+/* DIY Cover */
+"cover.title" = "DIY 封面";
+"cover.live_preview" = "实时预览";
+"cover.drag_out_hint" = "拖出画布外可删除元素";
+"cover.tab.stickers" = "贴纸";
+"cover.tab.text" = "文字";
+"cover.tab.frames" = "相框";
+"cover.tab.bg" = "背景";
+"cover.edit_element" = "编辑元素";
+"cover.edit.size" = "大小";
+"cover.edit.rotation" = "旋转";
+"cover.edit.color" = "颜色";
+"cover.edit.done" = "完成";
+"cover.finish_confirm_title" = "是否完成皮肤创建？";
+"cover.finish_confirm_message" = "预览将保存为图片并返回上一页。";
+"cover.text_serif" = "艺术衬线";
+"cover.text_mono" = "极简等宽";
+
+/* Workshop */
+"workshop.title" = "工坊 / 商店";
+"workshop.diy_preview" = "DIY 设计预览";
+"workshop.diy_empty" = "还没有 DIY 设计。\n开始创作你的风格吧！";
+"workshop.materials" = "艺术素材";
+"workshop.pro" = "PRO";
+"workshop.task" = "任务";
+"workshop.pts" = "积分";
+
+/* Capture */
+"capture.title" = "灵感 / 采集";
+"capture.tap_to_focus" = "点击对焦";
+"capture.recent_drafts" = "最近草稿";
+"capture.mode_scan" = "剪贴档案";
+"capture.mode_photo" = "岁月留影";
+"capture.mode_scan_note" = "像扫描仪一样自动切边并拉正纸张，让杂乱的检查单变身整齐的数字化文档。";
+"capture.mode_photo_note" = "像相机一样保留照片全貌与环境，原汁原味地记录生活瞬间的氛围感。";
+
+/* Profile */
+"profile.title" = "个人与归档";
+"profile.join_vip" = "加入 VIP";
+"profile.vip_subtitle" = "解锁全部皮肤与自定义主题";
+"profile.join_now" = "立即加入";
+"profile.icloud_sync" = "iCloud 同步";
+"profile.storage" = "存储空间";
+"profile.up_to_date" = "已是最新";
+"profile.privacy_security" = "隐私与安全";
+"profile.biometric_lock" = "生物识别锁定";
+"profile.passcode" = "密码保护";
+"profile.export_print" = "导出与打印";
+"profile.order_book" = "订购实体书";
+"profile.order_book_subtitle" = "将回忆制作成高质量纪念册";
+"profile.export_pdf" = "导出为 PDF";
+"profile.archive_all" = "归档全部手账";
+
+/* Common */
+"common.cancel" = "取消";
+"common.confirm" = "确认";
