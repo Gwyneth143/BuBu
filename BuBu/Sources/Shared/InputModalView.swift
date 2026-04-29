@@ -16,13 +16,13 @@ struct InputModalView: View {
 
     @FocusState private var isInputFocused: Bool
 
-    private let modalPink = Color(hex: "FF5BA8")
-    private let iconCirclePink = Color(hex: "FF5BA8").opacity(0.25)
-    private let iconTint = Color(hex: "E91E63")
-    private let borderGray = Color(hex: "E0E0E0")
-    private let titleColor = Color(hex: "1A1A1A")
-    private let subtitleColor = Color(hex: "5C5C5C")
-    private let labelColor = Color(hex: "8E8E8E")
+//    private let modalPink = Color(hex: "FF5BA8")
+//    private let iconCirclePink = Color(hex: "FF5BA8").opacity(0.25)
+//    private let iconTint = Color(hex: "E91E63")
+//    private let borderGray = Color(hex: "E0E0E0")
+//    private let titleColor = Color(hex: "1A1A1A")
+//    private let subtitleColor = Color(hex: "5C5C5C")
+//    private let labelColor = Color(hex: "8E8E8E")
 
     var body: some View {
         ZStack {
@@ -37,25 +37,25 @@ struct InputModalView: View {
                 // 顶部图标
                 ZStack {
                     Circle()
-                        .fill(iconCirclePink)
+                        .fill(AppTheme.Colors.appBackground)
                         .frame(width: 56, height: 56)
                     Image(systemName: iconName)
                         .font(.system(size: 26, weight: .medium))
-                        .foregroundColor(iconTint)
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                 }
                 .padding(.top, 28)
                 .padding(.bottom, 16)
 
                 Text(title)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(titleColor)
+                    .foregroundColor(AppTheme.Colors.titleColor)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
 
                 if let subtitle = subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(subtitleColor)
+                        .foregroundColor(AppTheme.Colors.subtitleColor)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
@@ -65,7 +65,7 @@ struct InputModalView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(inputLabel.uppercased())
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(labelColor)
+                        .foregroundColor(AppTheme.Colors.titleColor)
                         .tracking(0.5)
 
                     HStack(spacing: 8) {
@@ -79,7 +79,7 @@ struct InputModalView: View {
                                     .fill(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 24)
-                                            .stroke(borderGray, lineWidth: 1)
+                                            .stroke(AppTheme.Colors.borderColor, lineWidth: 1)
                                     )
                             )
 
@@ -88,11 +88,11 @@ struct InputModalView: View {
                         } label: {
                             Image(systemName: "keyboard.chevron.compact.down")
                                 .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(iconTint)
+                                .foregroundColor(AppTheme.Colors.primaryColor)
                                 .frame(width: 40, height: 40)
                                 .background(
                                     Circle()
-                                        .fill(iconCirclePink.opacity(0.5))
+                                        .fill(AppTheme.Colors.appBackground)
                                 )
                         }
                         .buttonStyle(.plain)
@@ -107,7 +107,7 @@ struct InputModalView: View {
                     Button(action: onCancel) {
                         Text(cancelTitle)
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(titleColor)
+                            .foregroundColor(AppTheme.Colors.titleColor)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(
@@ -115,7 +115,7 @@ struct InputModalView: View {
                                     .fill(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 24)
-                                            .stroke(borderGray, lineWidth: 1)
+                                            .stroke(AppTheme.Colors.borderColor, lineWidth: 1)
                                     )
                             )
                     }
@@ -129,7 +129,7 @@ struct InputModalView: View {
                             .padding(.vertical, 14)
                             .background(
                                 RoundedRectangle(cornerRadius: 24)
-                                    .fill(modalPink)
+                                    .fill(AppTheme.Colors.primaryColor)
                             )
                     }
                     .buttonStyle(.plain)

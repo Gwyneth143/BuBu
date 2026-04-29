@@ -1,34 +1,55 @@
 /* App & Tabs */
-"tab.library" = "LIBRARY";
+"tab.library" = "JOURNAL";
 "tab.capture" = "CAPTURE";
 "tab.workshop" = "WORKSHOP";
 "tab.profile" = "PROFILE";
 
 /* Bookshelf */
-"bookshelf.title" = "BOOKSHELF";
+"bookshelf.title" = "JOURNAL";
 "bookshelf.search_placeholder" = "Search your journals";
 "bookshelf.empty_title" = "YOUR BOOKSHELF IS EMPTY";
 "bookshelf.empty_hint" = "Tap '+' to start your first journal!";
 "bookshelf.create_journal" = "CREATE JOURNAL";
 "bookshelf.category.all" = "All";
-"bookshelf.category.travel" = "Travel";
-"bookshelf.category.family" = "Family";
-"bookshelf.category.personal" = "Personal";
 
 /* Create Journal */
 "create_journal.title" = "New Journal";
 "create_journal.journal_title" = "Journal Title";
-"create_journal.title_placeholder" = "e.g. My Pregnancy Journal";
-"create_journal.choose_style" = "Choose Style";
-"create_journal.style_solid" = "Solid Colors";
+"create_journal.title_placeholder" = "Enter title...";
+"create_journal.choose_cover" = "Choose Cover";
+"create_journal.style_solid" = "System";
 "create_journal.style_skins" = "Skins";
+"create_journal.style_diy" = "DIY";
 "create_journal.category" = "Category";
 "create_journal.add_category" = "Add New Category";
 "create_journal.add_category_subtitle" = "Organize your thoughts better with a custom category.";
 "create_journal.category_name" = "Category Name";
 "create_journal.category_placeholder" = "Enter category name...";
 "create_journal.create_btn" = "CREATE JOURNAL";
+"create_journal.create_error" = "Creation failed";
 "create_journal.new_category" = "New Category";
+"create_journal.new_category_error" = "Failed to create the new category";
+
+/* Book Detail*/
+"bookdetail.toolbar_more" = "More";
+"bookdetail.back" = "Back";
+"bookdetail.open" = "OPEN";
+"bookdetail.capture" = "Capture";
+"bookdetail.delete_page" = "Delete This Page";
+"bookdetail.delete_page_title" = "Delete current page?";
+"bookdetail.delete_page_message" = "This action cannot be undone. Continue?";
+"bookdetail.book_delete" = "delete this journal?";
+"bookdetail.book_delete_info" = "cannot be restored after deletion, both cloud and local cache will be removed‌.";
+"bookdetail.password.title" = "Enter password";
+"bookdetail.password.subtitle" = "Please enter a 4-digit password to open the  journal";
+"bookdetail.password.delete_subtitle" = "Enter your 4-digit password to delete this journal";
+"bookdetail.delete_auth_reason" = "Authenticate to delete this journal";
+"bookdetail.password.placeholder" = "4-digit password";
+"bookdetail.password.error" = "Password error, please try again";
+"bookdetail.tags_button" = "Tags";
+"bookdetail.tags_modal_title" = "All Page Tags";
+"bookdetail.tags_empty" = "No tags on current pages yet.";
+"bookdetail.tags_tap_hint" = "Tap a tag to jump to its page";
 
 /* DIY Cover */
 "cover.title" = "DIY Cover";
@@ -45,44 +66,158 @@
 "cover.edit.done" = "Done";
 "cover.finish_confirm_title" = "Finish skin creation?";
 "cover.finish_confirm_message" = "The preview will be saved as an image and you will return to the previous page.";
+"cover.background_required_title" = "Notice";
+"cover.background_required_message" = "Please set a background first.";
+"cover.discard_edit_title" = "Discard edits and leave?";
+"cover.discard_edit_message" = "Your current canvas changes are not saved and will be lost.";
+"cover.discard_edit_confirm" = "Discard and Leave";
 "cover.text_serif" = "Artistic Serif";
 "cover.text_mono" = "Minimalist Mono";
+"cover.upload_failed_title" = "Upload Failed";
+"cover.upload_display_name" = "DIY Cover";
 
 /* Workshop */
-"workshop.title" = "Workshop / Shop";
+"workshop.title" = "Workshop";
 "workshop.diy_preview" = "DIY Designs Preview";
 "workshop.diy_empty" = "No DIY designs yet. Start\ncreating your own style!";
 "workshop.materials" = "Artistic Materials";
 "workshop.pro" = "PRO";
 "workshop.task" = "Task";
 "workshop.pts" = "pts";
+"workshop.section_diy" = "DIY Design";
+"workshop.empty_diy_card" = "Tap the button above to start your DIY skin journey!\nYou can have up to 3 exclusive skins.";
+"workshop.section_skin_gallery" = "Skin Gallery";
+"workshop.badge_member" = "VIP Exclusive";
+"workshop.toast_collect_success" = "Added";
+"workshop.toast_skin_deleted" = "Deleted";
+"workshop.toast_diy_limit_reached" = "You can create up to 3 DIY designs";
+"workshop.delete_skin_confirm_message" = "This action cannot be undone. Delete this skin?";
 
 /* Capture */
-"capture.title" = "Inspiration / Capture";
-"capture.tap_to_focus" = "Tap to focus";
+"capture.title" = "Capture";
 "capture.recent_drafts" = "Recent Drafts";
+"capture.recent_drafts_empty" = "Your drafts box is empty.";
+"capture.draft_delete_message" = "This action cannot be undone. Delete this draft?";
+"capture.button_scan" = "Scan";
+"capture.button_picture" = "Picture";
+"capture.button_upload" = "Upload";
 "capture.mode_scan" = "Scan";
 "capture.mode_photo" = "Photo";
 "capture.mode_scan_note" = "Scans documents like a pro. Perfect for medical records and paper keepsakes.";
 "capture.mode_photo_note" = "Preserves the entire scene. Best for life moments, scenery, and portraits.";
+"capture.mode_select_title" = "Select upload method";
+"capture.mode_select_subtitle" = "You can choose what you want to upload from the album or file";
+"capture.mode_select_photo_title" = "Select from album";
+"capture.mode_select_photo_subtitle" = "Support recent photos and screenshots taken";
+"capture.mode_select_file_title" = "Select from file";
+"capture.mode_select_file_subtitle" = "Supports images and PDF files";
+"capture.upload_message" = "Loading photos…";
+
+/* Login */
+"login.title" = "Welcome to PageNest";
+"login.subtitle" = "Sign in with Apple ID to continue capturing and organizing";
+"login.feature.privacy" = "Privacy first, your data stays in your control";
+"login.feature.sync" = "iCloud sync keeps all your devices in sync";
+"login.feature.workshop" = "DIY workshop for your own cover styles";
+"login.icloud_upload_toggle" = "iCloud";
+"login.terms_hint" = "By continuing, you agree to the User Notice and Privacy Policy";
+"login.fallback_continue" = "Continue";
+"login.error_title" = "Login Failed";
+"login.error_fallback" = "Please try again later.";
+"login.error.missing_credential" = "Apple sign-in credential was not received";
+"login.error.missing_identity_token" = "Unable to get identityToken";
+"login.user_notice" = "User Notice";
+"login.privacy_policy" = "Privacy Policy";
+"login.close" = "Close";
+
+/* Document Scanner — bottom panel */
+"scanner.save_to_notebook" = "Save to journal";
+"scanner.save" = "Save";
+"scanner.no_notebooks_title" = "No journals yet";
+"scanner.no_notebooks_hint" = "Content will stay in drafts for now. Create a journal later to organize.";
+"scanner.drafts" = "Drafts";
+"scanner.tap_switch_to_journal" = "Tap to save to a journal";
+"scanner.untitled_journal" = "Untitled Journal";
+"scanner.tap_switch_notebook_or_drafts" = "Tap to switch journal or drafts";
+"scanner.notebook_not_found" = "Journal not found";
+"scanner.reselect_save_target" = "Please choose where to save again";
+"scanner.tag" = "Tag";
+"scanner.tag_placeholder" = "Add a tag for this page…";
+"scanner.note" = "Notes";
+"scanner.note_placeholder" = "Anything to jot down…";
+
+/* Document Scanner — save target picker */
+"scanner.picker_title" = "Choose where to save";
+"scanner.picker_empty_hint" = "No journals yet. You can save to drafts first, then create a journal on the shelf.";
+"scanner.picker_draft_subtitle" = "Stored on device; move to a journal later";
+"scanner.untitled_notebook" = "Untitled";
+
+/* Document Scanner — main screen & save confirm */
+"scanner.nav_title" = "Organizer";
+"scanner.save_confirm_title" = "Save this page?";
+"scanner.save_confirm_cancel" = "Not now";
+"scanner.save_confirm_confirm" = "Save";
+"scanner.save_confirm_message_draft" = "Will be saved to drafts. You can keep editing later.";
+"scanner.save_confirm_message_notebook" = "Will save to your selected journal: %@";
+"scanner.unsupported_title" = "Document scanning isn’t available on this platform.";
+"scanner.unsupported_hint" = "Use an iPhone or iPad that supports VisionKit.";
 
 /* Profile */
-"profile.title" = "Profile & Archive";
+"profile.title" = "Profile";
 "profile.join_vip" = "Join VIP";
 "profile.vip_subtitle" = "Unlock all skins & custom themes";
 "profile.join_now" = "Join Now";
 "profile.icloud_sync" = "iCloud Sync";
 "profile.storage" = "STORAGE";
+"profile.icloud_upload_hint" = "Your journal data is stored locally by default, or synced to iCloud only when you do it manually. It is not uploaded to cloud automatically. Keep your original data safe, as local data may be lost after uninstalling the app.";
 "profile.up_to_date" = "Up to date";
 "profile.privacy_security" = "PRIVACY & SECURITY";
 "profile.biometric_lock" = "Biometric Lock";
 "profile.passcode" = "Passcode Protection";
-"profile.export_print" = "EXPORT & PRINT";
-"profile.order_book" = "Order Physical Book";
-"profile.order_book_subtitle" = "Turn your memories into a high-quality keepsake";
-"profile.export_pdf" = "Export to PDF";
-"profile.archive_all" = "Archive All Journals";
+"profile.default_user_name" = "User";
+"profile.not_logged_in" = "Not signed in";
+"profile.login_prompt" = "Sign in to sync iCloud, manage privacy settings, and unlock full features.";
+"profile.sync.last_synced_at" = "Last synced %@";
+"profile.sync.not_synced" = "Not synced";
+"profile.sync.disabled" = "iCloud upload is turned off";
+"profile.sync.icloud_not_signed_in" = "iCloud not signed in";
+"profile.sync.synced" = "Synced";
+"profile.sync.failed" = "Sync failed";
+"profile.sync.pull_action" = "Pull iCloud Data";
+"profile.sync.upload_action" = "Upload to iCloud";
+"profile.sync.delete_cloud_action" = "Delete iCloud Data";
+"profile.cloud_delete_title" = "Delete iCloud backup data?";
+"profile.cloud_delete_message" = "This will remove backed-up pages and images from cloud and cannot be undone. Continue?";
+"profile.legal_section" = "Terms & Agreements";
+"profile.legal.user_notice" = "User Notice";
+"profile.legal.privacy_policy" = "Privacy Policy";
+"profile.legal.feedback" = "Feedback";
+"profile.biometric_enable_reason" = "Enable biometric lock to protect private content";
+"profile.biometric_disable_reason" = "Please verify your identity before disabling biometric lock";
+"profile.passcode.set_title" = "Set a 4-digit passcode";
+"profile.passcode.set_placeholder" = "Enter a 4-digit passcode";
+"profile.passcode.set_confirm_placeholder" = "Re-enter passcode";
+"profile.passcode.disable_title" = "Enter passcode to disable protection";
+"profile.passcode.disable_placeholder" = "Enter current passcode";
+"profile.passcode.save" = "Save Passcode";
+"profile.passcode.confirm_disable" = "Disable";
+"profile.passcode.error_required_4_digits" = "Please enter a 4-digit passcode";
+"profile.passcode.error_not_match" = "The two passcodes do not match";
+"profile.passcode.error_wrong" = "Incorrect passcode";
+"profile.passcode.priority_hint" = "When enabled, opening a journal asks for your passcode first. If biometric lock is also on, passcode still comes first.";
+"profile.logout" = "Log Out";
+"profile.logout_immediate_action" = "Log Out Now";
+"profile.logout_sync_action" = "Sync Data";
+"profile.logout_sync_prompt_title" = "Sync latest data before logout?";
+"profile.logout_sync_prompt_message" = "iCloud upload is enabled. We recommend syncing before signing out.";
+"profile.logout_confirm_title" = "Log out of current account?";
+"profile.logout_confirm_message" = "You can sign in again after logout. Local data will not be deleted.";
+"profile.logout_confirm_action" = "Log Out";
 
 /* Common */
 "common.cancel" = "Cancel";
 "common.confirm" = "Confirm";
+"common.delete" = "Delete";
+"common.delete_confirm_title" = "Confirm deletion?";
+"common.save" = "Save";
+"common.ok" = "OK";

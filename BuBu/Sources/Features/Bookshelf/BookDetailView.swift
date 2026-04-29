@@ -2,8 +2,8 @@ import SwiftUI
 import Kingfisher
 
 struct BookDetailView: View {
-    private let pageWidth: CGFloat = UIScreen.main.bounds.width - 48       //册子宽度
-    private let pageHeight: CGFloat = (UIScreen.main.bounds.width - 48)  * 1.414    //册子高度
+    private let pageWidth: CGFloat = UIScreen.main.bounds.width - 60       //册子宽度
+    private let pageHeight: CGFloat = (UIScreen.main.bounds.width - 60)  * 1.414   //册子高度
     let notebook: Notebook
     let photos: [NotebookPage]
     @AppStorage("privacy.biometricLockEnabled") private var biometricLockEnabled = false
@@ -16,16 +16,46 @@ struct BookDetailView: View {
     @State private var showingCoverPreview = false
     @State private var showingMoreMenu = false
     @State private var showingDeleteConfirm = false
+    @State private var showingDeletePageConfirm = false
     @State private var isDeleting = false
     @State private var isOpen = false
+    @State private var showingTagsModal = false
     @State private var currentPage: NotebookPage?
     @State private var localPages: [NotebookPage] = []
+    @State private var hasLoadedLocalPages = false
     @State private var showingPasscodePrompt = false
+    @State private var passcodePromptContext: PasscodePromptContext = .open
     @State private var passcodeInput = ""
     @State private var passcodeErrorText = ""
+
+    private enum PasscodePromptContext {
+        case open
+        case delete
+    }
     
     private var displayedPages: [NotebookPage] {
-        localPages.isEmpty ? notebook.pages : localPages
+        hasLoadedLocalPages ? localPages : notebook.pages
+    }
+
+    private var pageTags: [String] {
+        Array(
+            Set(
+                displayedPages
+                    .map { $0.tag.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        ).sorted()
+    }
+
+    private var tagFirstPageMap: [String: NotebookPage] {
+        var result: [String: NotebookPage] = [:]
+        for page in displayedPages {
+            let normalizedTag = page.tag.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !normalizedTag.isEmpty, result[normalizedTag] == nil {
+                result[normalizedTag] = page
+            }
+        }
+        return result
     }
     
     var body: some View {
@@ -47,16 +77,39 @@ struct BookDetailView: View {
 
             if showingMoreMenu {
                 VStack(spacing: 0) {
+                    Button(role: .destructive) {
+                        showingMoreMenu = false
+                        showingDeletePageConfirm = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "trash.slash")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
+                            Text(localized: "bookdetail.delete_page")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(currentPage == nil)
+                    .opacity(currentPage == nil ? 0.5 : 1)
+
+                    Divider()
+                        .padding(.horizontal, 12)
+
                     // Delete row
                     Button(role: .destructive) {
                         showingMoreMenu = false
-                        showingDeleteConfirm = true
+                        beginDeleteSecureFlow()
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "trash")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
-                            Text("Delete")
+                            Text(localized: "common.delete")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
                             Spacer()
@@ -78,11 +131,11 @@ struct BookDetailView: View {
 
             if showingDeleteConfirm {
                 ConfirmModalView(
-                    title: "删除这本册子？",
-                    message: "删除后无法恢复，云端与本地缓存将一并移除。",
+                    title: String.localized("bookdetail.book_delete"),
+                    message: String.localized("bookdetail.book_delete_info"),
                     iconName: "trash.fill",
-                    cancelTitle: "取消",
-                    confirmTitle: "删除",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.delete"),
                     confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
                     onCancel: {
                         showingDeleteConfirm = false
@@ -95,6 +148,30 @@ struct BookDetailView: View {
                 .zIndex(20)
             }
 
+            if showingDeletePageConfirm {
+                ConfirmModalView(
+                    title: String.localized("bookdetail.delete_page_title"),
+                    message: String.localized("bookdetail.delete_page_message"),
+                    iconName: "trash.slash.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.delete"),
+                    confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
+                    onCancel: {
+                        showingDeletePageConfirm = false
+                    },
+                    onConfirm: {
+                        showingDeletePageConfirm = false
+                        deleteCurrentPage()
+                    }
+                )
+                .zIndex(21)
+            }
+
+            if showingTagsModal {
+                tagGridModalView
+                .zIndex(25)
+            }
+
             if showingPasscodePrompt {
                 passcodePromptView
                     .zIndex(30)
@@ -103,8 +180,19 @@ struct BookDetailView: View {
         .background(AppTheme.Colors.appBackground.ignoresSafeArea())
         .navigationTitle(notebook.title)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                }
+                .accessibilityLabel(Text(localized: "bookdetail.back"))
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                         showingMoreMenu.toggle()
@@ -114,30 +202,21 @@ struct BookDetailView: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
                 }
+                .accessibilityLabel(Text(localized: "bookdetail.toolbar_more"))
             }
         }
-//        .fullScreenCover(isPresented: $showingCoverPreview) {
-//            CompatibleNavigationStack {
-//                ZStack {
-//                    Color.black.opacity(0.98).ignoresSafeArea()
-//                }
-//                .navigationTitle(notebook.title)
-//                .navigationBarTitleDisplayMode(.inline)
-//                .toolbar {
-//                    ToolbarItem(placement: .cancellationAction) {
-//                        Button("关闭") {
-//                            showingCoverPreview = false
-//                        }
-//                    }
-//                }
-//            }
-//        }
         .onAppear {
             tabBarHidden?.wrappedValue = true
             loadLocalPages()
         }
         .onDisappear {
             tabBarHidden?.wrappedValue = false
+        }
+        /// 从详情切到采集/工坊/个人等 Tab 时视图常不离栈，onDisappear 不触发；切回书架时需再次隐藏 TabBar。
+        .onChange(of: rootTabSelection?.wrappedValue ?? .library) { newTab in
+            if newTab == .library {
+                tabBarHidden?.wrappedValue = true
+            }
         }
     }
 
@@ -165,12 +244,37 @@ struct BookDetailView: View {
         }
     }
 
+    // 删除当前页
+    private func deleteCurrentPage() {
+        guard let page = currentPage else { return }
+        Task {
+            guard var book = try? await env.documentStore.fetchNotebook(id: notebook.serverBookId) else { return }
+            book.pages.removeAll { $0.id == page.id }
+            book.pages = book.pages.enumerated().map { index, p in
+                var copy = p
+                copy.sortIndex = index
+                return copy
+            }
+            book.updatedAt = Date()
+            try? await env.documentStore.saveNotebook(book)
+            await MainActor.run {
+                localPages = book.pages
+                hasLoadedLocalPages = true
+                currentPage = book.pages.first
+                if book.pages.isEmpty {
+                    isOpen = false
+                }
+            }
+        }
+    }
+
     // 加载册子数据
     private func loadLocalPages() {
         Task {
             let pages = (try? await env.documentStore.fetchPages(for: notebook.serverBookId)) ?? []
             await MainActor.run {
                 localPages = pages
+                hasLoadedLocalPages = true
                 if currentPage == nil {
                     currentPage = pages.first ?? photos.first ?? notebook.pages.first
                 }
@@ -189,6 +293,27 @@ struct BookDetailView: View {
             }
             .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundColor(Color(hex: "96A0B3"))
+
+            Button {
+                showingTagsModal = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "tag.fill")
+                    Text("\(String.localized("bookdetail.tags_button")) (\(pageTags.count))")
+                }
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(AppTheme.Colors.primaryColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color.white)
+                        .overlay(
+                            Capsule().stroke(AppTheme.Colors.primaryColor.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity)
     }
@@ -199,26 +324,31 @@ struct BookDetailView: View {
                 BookDetailAlbumView(notebook: notebook, photos: displayedPages, currentPage: $currentPage)
             }
             if !isOpen {
-                KFImage.url(URL(string: notebook.cover.imageUrl))
-                    .placeholder { ProgressView() }
-                    .onFailureView {
-                        Image(systemName: "photo")
-                            .foregroundColor(.secondary)
-                    }
-                    .fade(duration: 0.2)
-                    .resizable()
-                    .scaledToFill()
-                    .aspectRatio(1.0/1.414, contentMode: .fill)
-                    .frame(width: pageWidth,height: pageHeight)
-                    .clipped()
-                    .shadow(color: Color.black.opacity(0.5), radius: 10, x: 4, y: 4)
-                    .transition(.asymmetric(
-                        insertion: .identity,
-                        removal: .modifier(
-                            active:   PageCurlModifier(progress: 1.0),
-                            identity: PageCurlModifier(progress: 0.0)
-                        )
-                    ))
+                ZStack(alignment: .bottomTrailing) {
+                    Rectangle()
+                        .fill(AppTheme.Colors.shadowBlockColor)
+                        .frame(width: pageWidth,height: pageHeight)
+                        .offset(x: 4,y: 4)
+                        .shadow(color: AppTheme.Colors.shadowColor, radius: 10, x: 2, y: 2)
+                    KFImage.url(URL(string: notebook.cover.imageUrl))
+                        .placeholder { ProgressView() }
+                        .onFailureView {
+                            Image(systemName: "photo")
+                                .foregroundColor(.secondary)
+                        }
+                        .fade(duration: 0.2)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: pageWidth,height: pageHeight)
+                        .clipped()
+                        .transition(.asymmetric(
+                            insertion: .identity,
+                            removal: .modifier(
+                                active:   PageCurlModifier(progress: 1.0),
+                                identity: PageCurlModifier(progress: 0.0)
+                            )
+                        ))
+                }
 //                    .onTapGesture {
 //                        withAnimation(.easeInOut(duration: 0.7)) {
 //                            isOpen = true
@@ -248,16 +378,17 @@ struct BookDetailView: View {
     private var openButton: some View {
         if displayedPages.count == 0 {
             Button {
+                tabBarHidden?.wrappedValue = false
                 rootTabSelection?.wrappedValue = .capture
             } label: {
-                Text("去采集")
-                    .font(.system(size: 14, weight: .semibold))
+                Text(localized: "bookdetail.capture")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 16)
                     .background(
                         Capsule()
-                            .fill(Color(hex: "FF5BA8"))
+                            .fill(AppTheme.Colors.primaryColor)
                     )
             }
             .buttonStyle(.plain)
@@ -266,14 +397,14 @@ struct BookDetailView: View {
                 guard !isOpen else { return }
                 startOpenFlow()
             } label: {
-                Text("开启")
-                    .font(.system(size: 14, weight: .semibold))
+                Text(localized:"bookdetail.open")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 16)
                     .background(
                         Capsule()
-                            .fill(Color(hex: "FF5BA8"))
+                            .fill(AppTheme.Colors.primaryColor)
                     )
             }
             .buttonStyle(.plain)
@@ -282,6 +413,7 @@ struct BookDetailView: View {
 
     private func startOpenFlow() {
         if passcodeLockEnabled, !passcodeValue.isEmpty {
+            passcodePromptContext = .open
             passcodeInput = ""
             passcodeErrorText = ""
             showingPasscodePrompt = true
@@ -290,9 +422,40 @@ struct BookDetailView: View {
         Task { await authenticateAndOpenIfNeeded() }
     }
 
+    /// 删除前：先密码锁（若开启）→ 再面容锁（若开启）→ 最后弹出删除确认
+    private func beginDeleteSecureFlow() {
+        if passcodeLockEnabled, !passcodeValue.isEmpty {
+            passcodePromptContext = .delete
+            passcodeInput = ""
+            passcodeErrorText = ""
+            showingPasscodePrompt = true
+            return
+        }
+        Task { await authenticateForDeleteIfNeeded() }
+    }
+
+    private func confirmPasscodeForDelete() {
+        guard passcodeInput == passcodeValue else {
+            passcodeErrorText = String.localized("bookdetail.password.error")
+            return
+        }
+        showingPasscodePrompt = false
+        Task { await authenticateForDeleteIfNeeded() }
+    }
+
+    private func authenticateForDeleteIfNeeded() async {
+        if biometricLockEnabled {
+            let success = await env.authService.authenticate(reason: String.localized("bookdetail.delete_auth_reason"))
+            guard success else { return }
+        }
+        await MainActor.run {
+            showingDeleteConfirm = true
+        }
+    }
+
     private func confirmPasscodeAndOpen() {
         guard passcodeInput == passcodeValue else {
-            passcodeErrorText = "密码错误，请重试"
+            passcodeErrorText = String.localized("bookdetail.password.error")
             return
         }
         showingPasscodePrompt = false
@@ -317,13 +480,13 @@ struct BookDetailView: View {
                 .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 14) {
-                Text("输入密码")
+                Text(localized: "bookdetail.password.title")
                     .font(.headline)
-                Text("请输入 4 位密码后开启册子")
+                Text(String.localized(passcodePromptContext == .open ? "bookdetail.password.subtitle" : "bookdetail.password.delete_subtitle"))
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                SecureField("4 位密码", text: $passcodeInput)
+                SecureField(String.localized("bookdetail.password.placeholder"), text: $passcodeInput)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
                     .padding(.horizontal, 14)
@@ -343,7 +506,7 @@ struct BookDetailView: View {
                 }
 
                 HStack(spacing: 12) {
-                    Button("取消") {
+                    Button(String.localized("common.cancel")) {
                         showingPasscodePrompt = false
                     }
                     .font(.system(size: 15, weight: .semibold))
@@ -355,8 +518,13 @@ struct BookDetailView: View {
                             .fill(Color.gray.opacity(0.12))
                     )
 
-                    Button("确认") {
-                        confirmPasscodeAndOpen()
+                    Button(String.localized("common.confirm")) {
+                        switch passcodePromptContext {
+                        case .open:
+                            confirmPasscodeAndOpen()
+                        case .delete:
+                            confirmPasscodeForDelete()
+                        }
                     }
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
@@ -364,7 +532,7 @@ struct BookDetailView: View {
                     .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(hex: "FF5BA8"))
+                            .fill(AppTheme.Colors.primaryColor)
                     )
                     .disabled(passcodeInput.count < 4)
                     .opacity(passcodeInput.count < 4 ? 0.6 : 1)
@@ -410,5 +578,90 @@ struct BookDetailView: View {
     
     private var displayDate: String {
         notebook.updatedAt.formatted(.dateTime.month(.wide).day().year())
+    }
+
+    private var tagGridModalView: some View {
+        let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
+        return ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showingTagsModal = false
+                }
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Label(String.localized("bookdetail.tags_modal_title"), systemImage: "tag.fill")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        showingTagsModal = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .frame(width: 28, height: 28)
+                            .background(Circle().fill(Color.gray.opacity(0.12)))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text(localized: "bookdetail.tags_tap_hint")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if pageTags.isEmpty {
+                    Text(localized: "bookdetail.tags_empty")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 16)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                            ForEach(pageTags, id: \.self) { tag in
+                                Button {
+                                    if let targetPage = tagFirstPageMap[tag] {
+                                        currentPage = targetPage
+                                    }
+                                    if !isOpen {
+                                        withAnimation(.easeInOut(duration: 0.7)) {
+                                            isOpen = true
+                                        }
+                                    }
+                                    showingTagsModal = false
+                                } label: {
+                                    Text(tag)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(AppTheme.Colors.primaryColor)
+                                        .lineLimit(1)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.white)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(AppTheme.Colors.primaryColor.opacity(0.35), lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 260)
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: 340)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 10)
+            )
+            .padding(.horizontal, 24)
+        }
     }
 }

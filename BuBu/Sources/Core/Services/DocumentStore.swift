@@ -18,6 +18,8 @@ protocol DocumentStore {
 //    func listNotebookIDs() async throws -> [UUID]
     func saveNotebook(_ notebook: Notebook) async throws
     func deleteNotebook(_ notebookID: Int) async throws
+    /// 返回当前本地持久化中的全部册子（含草稿与正式册子）
+    func fetchAllNotebooks() async throws -> [Notebook]
 
     func fetchNotebookIDsPendingSync() async throws -> [UUID]
     var storageCapabilities: DocumentStorageCapabilities { get }
@@ -33,6 +35,11 @@ extension DocumentStore {
     }
 
     func fetchNotebookIDsPendingSync() async throws -> [UUID] { [] }
+
+    func fetchAllNotebooks() async throws -> [Notebook] {
+        let draft = try await fetchNotebook(id: nil)
+        return draft.map { [$0] } ?? []
+    }
 
     var storageCapabilities: DocumentStorageCapabilities {
         DocumentStorageCapabilities(supportsSyncMetadata: false, supportsSoftDelete: false)
@@ -62,6 +69,10 @@ final class InMemoryDocumentStore: DocumentStore {
 
     func deleteNotebook(_ notebookID: Int) async throws {
         notebooks.removeAll { $0.serverBookId == notebookID }
+    }
+
+    func fetchAllNotebooks() async throws -> [Notebook] {
+        notebooks
     }
 }
 
@@ -149,6 +160,29 @@ actor LocalDocumentStore: DocumentStore {
             try FileManager.default.removeItem(at: dir)
         }
         cache.removeValue(forKey: "\(notebookID)")
+    }
+
+    func fetchAllNotebooks() async throws -> [Notebook] {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: booksDir.path) else {
+            return Array(cache.values)
+        }
+        let dirs = try fm.contentsOfDirectory(
+            at: booksDir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )
+        var notebooks: [Notebook] = []
+        for dir in dirs {
+            guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
+            let fileURL = dir.appendingPathComponent("notebook.json")
+            guard fm.fileExists(atPath: fileURL.path) else { continue }
+            guard let data = try? Data(contentsOf: fileURL),
+                  let notebook = try? decoder.decode(Notebook.self, from: data) else { continue }
+            notebooks.append(notebook)
+            cache[getNotebookID(id: notebook.serverBookId)] = notebook
+        }
+        return notebooks.sorted { $0.updatedAt > $1.updatedAt }
     }
 
     private func dataForNotebookFile(notebookID: String) throws -> Data {

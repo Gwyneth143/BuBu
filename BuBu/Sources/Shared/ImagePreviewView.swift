@@ -61,17 +61,17 @@ struct ImagePreviewView: View {
                                     self.rotation = rotation
                                 }
                         )
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    guard !isDragging else { return }
-                                    offset = value.translation
-                                }
-                                .onEnded { value in
-                                    guard !isDragging else { return }
-                                    offset = value.predictedEndTranslation
-                                }
-                        )
+//                        .gesture(
+//                            DragGesture()
+//                                .onChanged { value in
+//                                    guard !isDragging else { return }
+//                                    offset = value.translation
+//                                }
+//                                .onEnded { value in
+//                                    guard !isDragging else { return }
+//                                    offset = value.predictedEndTranslation
+//                                }
+//                        )
                 }
                 
                 Spacer()
@@ -87,7 +87,7 @@ struct ImagePreviewView: View {
                             .font(.title2)
                             .padding()
                             .background(Color.gray.opacity(0.2))
-                            .foregroundColor(AppTheme.Colors.tabHighlight)
+                            .foregroundColor(AppTheme.Colors.primaryColor)
                             .clipShape(Circle())
                     }
                     
@@ -102,7 +102,7 @@ struct ImagePreviewView: View {
                             .font(.title2)
                             .padding()
                             .background(Color.gray.opacity(0.2))
-                            .foregroundColor(AppTheme.Colors.tabHighlight)
+                            .foregroundColor(AppTheme.Colors.primaryColor)
                             .clipShape(Circle())
                         
                     }
@@ -116,7 +116,7 @@ struct ImagePreviewView: View {
                             .font(.title2)
                             .padding()
                             .background(Color.gray.opacity(0.2))
-                            .foregroundColor(AppTheme.Colors.tabHighlight)
+                            .foregroundColor(AppTheme.Colors.primaryColor)
                             .clipShape(Circle())
                     }
                 }

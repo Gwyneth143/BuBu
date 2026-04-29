@@ -5,6 +5,7 @@ protocol CoverStore {
     func fetchAllCovers(query: CoverQuery) async throws -> [NotebookCover]
     func fetchSystemCovers(type: Int?) async throws -> [NotebookCover]
     func fetchMyCovers(query: CoverQuery) async throws -> [NotebookCover]
+    
     /// 收藏皮肤到「我的」：`POST /my/skins`，body `{ "skinId": <id> }`
     func addSkinToMyCollection(skinId: Int) async throws
     /// DIY 封面上传：`POST /skins`，`multipart/form-data`（file、name、type、creatorUserId）
@@ -91,9 +92,10 @@ final class DefaultCoverStore: CoverStore {
     }
 
     func fetchAllCovers(query: CoverQuery) async throws -> [NotebookCover] {
-        guard let token = tokenProvider(), !token.isEmpty else {
-            throw CoverStoreError.missingAccessToken
-        }
+//        guard let token = tokenProvider(), !token.isEmpty else {
+//            throw CoverStoreError.missingAccessToken
+//        }
+        let token = tokenProvider()
         guard var components = URLComponents(string: endpoint) else {
             throw CoverStoreError.invalidURL
         }
@@ -128,7 +130,9 @@ final class DefaultCoverStore: CoverStore {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let t = token,!t.isEmpty {
+            request.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {

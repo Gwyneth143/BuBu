@@ -1,10 +1,14 @@
 import SwiftUI
 
 struct BookshelfView: View {
+    @EnvironmentObject private var env: AppEnvironment
+    @Environment(\.presentLogin) private var presentLogin
+    @Environment(\.rootTabSelection) private var rootTabSelection
     @StateObject private var viewModel: BookshelfViewModel
     @State private var searchText: String = ""
-    @State private var selectedCategory: String = "全部"
+    @State private var selectedCategory: String = String.localized("bookshelf.category.all")
     @State private var showingCreateNotebook = false
+    @State private var selectedNotebook: Notebook?
 
     init(categoryStore: CategoryStore, bookStore: BookStore) {
         _viewModel = StateObject(
@@ -18,15 +22,36 @@ struct BookshelfView: View {
     var body: some View {
         CompatibleNavigationStack {
             ZStack {
+                NavigationLink(
+                    destination: Group {
+                        if let n = selectedNotebook {
+                            BookDetailView(notebook: n, photos: n.pages)
+                        }
+                    },
+                    isActive: Binding(
+                        get: { selectedNotebook != nil },
+                        set: { if !$0 { selectedNotebook = nil } }
+                    )
+                ) {
+                    EmptyView()
+                }
+                .frame(width: 0, height: 0)
+                .hidden()
+
                 AppTheme.Colors.appBackground
                     .ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         title
-                        searchBar
+//                        searchBar
                         CategoryTabsView(
                             categories: viewModel.categorys,
-                            selection: $selectedCategory
+                            selection: $selectedCategory,
+                            onLoginGate: {
+                                if env.session.isLoggedIn { return true }
+                                presentLogin()
+                                return false
+                            }
                         )
                         shelves
                     }
@@ -37,22 +62,53 @@ struct BookshelfView: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .fullScreenCover(isPresented: $showingCreateNotebook) {
+            .fullScreenCover(isPresented: $showingCreateNotebook, onDismiss: {
+                Task {
+                    await viewModel.loadBooks(categorySelection: selectedCategory)
+                }
+            }) {
                 CreateNotebookView()
             }
-            .task {
-                await viewModel.load()
+            .onAppear {
+                Task { await viewModel.load() }
             }
             .onChange(of: selectedCategory) { newValue in
                 Task { await viewModel.loadBooks(categorySelection: newValue) }
             }
+            .onChange(of: env.session.isLoggedIn) { loggedIn in
+                // 常驻 Tab 下登录成功不会触发 onAppear，这里显式刷新数据。
+                if loggedIn {
+                    Task { await viewModel.load() }
+                } else {
+                    viewModel.notebooks = []
+                    viewModel.categorys = []
+                    selectedNotebook = nil
+                }
+            }
+            .onChange(of: selectedRootTab) { newTab in
+                // 切离书架时重置导航栈，避免返回书架仍停留在详情页。
+                if newTab != .library {
+                    selectedNotebook = nil
+                }
+            }
         }
+    }
+
+    private var selectedRootTab: RootTabView.Tab {
+        rootTabSelection?.wrappedValue ?? .library
+    }
+
+    private func requireLogin() -> Bool {
+        if env.session.isLoggedIn { return true }
+        presentLogin()
+        return false
     }
 
     private var title: some View {
         Text(localized: "bookshelf.title")
-            .font(AppTheme.Fonts.bookshelfTitle)
-            .kerning(1.2)
+            .font(AppTheme.Fonts.navTitle)
+            .foregroundStyle(AppTheme.Colors.navTitleColor)
+//                .kerning(1.2)
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
@@ -67,7 +123,7 @@ struct BookshelfView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(AppTheme.Colors.cardBackground)
+                .fill(AppTheme.Colors.surfaceColor)
                 .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
         )
     }
@@ -83,8 +139,9 @@ struct BookshelfView: View {
         } else {
             LazyVGrid(columns: shelfColumns, alignment: .center, spacing: 32) {
                 ForEach(Array(filteredNotebooks.enumerated()), id: \.element.id) { index, notebook in
-                    NavigationLink {
-                        BookDetailView(notebook: notebook,photos: notebook.pages)
+                    Button {
+                        guard requireLogin() else { return }
+                        selectedNotebook = notebook
                     } label: {
                         ShelfCardView(
                             notebook: notebook,
@@ -122,6 +179,7 @@ struct BookshelfView: View {
                 .multilineTextAlignment(.center)
             Spacer(minLength: 24)
             Button {
+                guard requireLogin() else { return }
                 showingCreateNotebook = true
             } label: {
                 Text(localized: "bookshelf.create_journal")
@@ -131,9 +189,9 @@ struct BookshelfView: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(hex: "FF5BA8"))
+                            .fill(AppTheme.Colors.primaryColor)
                     )
-                    .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    .shadow(color: AppTheme.Colors.shadowColor, radius: 8, x: 0, y: 4)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 32)
@@ -145,17 +203,18 @@ struct BookshelfView: View {
     private var addCard: some View {
         VStack {
             Button {
+                guard requireLogin() else { return }
                 showingCreateNotebook = true
             } label: {
                 RoundedRectangle(cornerRadius: 26)
-                    .fill(AppTheme.Colors.cardBackground)
+                    .fill(AppTheme.Colors.surfaceColor)
                     .frame(width: 88, height: 140)
                     .overlay(
                         Image(systemName: "plus")
                             .font(.title2.weight(.semibold))
                             .foregroundColor(.secondary)
                     )
-                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+                    .shadow(color: AppTheme.Colors.shadowColor, radius: 8, x: 0, y: 4)
             }
             .buttonStyle(.plain)
             Spacer()

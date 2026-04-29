@@ -8,22 +8,26 @@ struct CategoryTabsView: View {
     @Binding var selection: String
     /// 选中回调（可选）
     var onSelect: ((String) -> Void)?
+    /// 若返回 `false` 则不切换分类（用于未登录时拦截）
+    var onLoginGate: (() -> Bool)?
 
     init(
         categories: [String],
         selection: Binding<String>,
-        onSelect: ((String) -> Void)? = nil
+        onSelect: ((String) -> Void)? = nil,
+        onLoginGate: (() -> Bool)? = nil
     ) {
         // 在传入分类前面自动加上一个 “All”
         var allCategories: [String] = []
-        if !categories.contains("全部") {
-            allCategories.append("全部")
+        if !categories.contains(String.localized("bookshelf.category.all")) {
+            allCategories.append(String.localized("bookshelf.category.all"))
         }
         allCategories.append(contentsOf: categories)
 
         self.categories = allCategories
         self._selection = selection
         self.onSelect = onSelect
+        self.onLoginGate = onLoginGate
     }
 
     var body: some View {
@@ -33,17 +37,18 @@ struct CategoryTabsView: View {
                     ForEach(categories, id: \.self) { category in
                         VStack(spacing: 4) {
                             Button {
+                                if let gate = onLoginGate, !gate() { return }
                                 selection = category
                                 onSelect?(category)
                             } label: {
                                 Text(category)
                                     .font(.subheadline.weight(selection == category ? .semibold : .regular))
-                                    .foregroundColor(selection == category ? AppTheme.Colors.tabHighlight : .secondary)
+                                    .foregroundColor(selection == category ? AppTheme.Colors.primaryColor : .secondary)
                             }
                             .buttonStyle(.plain)
 
                             Rectangle()
-                                .fill(selection == category ? AppTheme.Colors.tabHighlight : Color.clear)
+                                .fill(selection == category ? AppTheme.Colors.primaryColor : Color.clear)
                                 .frame(height: 2)
                         }
                     }
@@ -52,9 +57,9 @@ struct CategoryTabsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Rectangle()
-                .fill(AppTheme.Colors.divider)
-                .frame(height: 1)
+//            Rectangle()
+//                .fill(AppTheme.Colors.divider)
+//                .frame(height: 1)
         }
         .padding(.top, 4)
     }

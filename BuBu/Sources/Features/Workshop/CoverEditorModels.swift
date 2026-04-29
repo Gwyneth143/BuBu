@@ -3,10 +3,12 @@ import SwiftUI
 // MARK: - 画布元素模型
 
 enum CanvasContent: Equatable {
-    case sticker(color: String, systemImage: String)
-    case text(string: String, isSerif: Bool, colorHex: String?)
-    case frame(styleId: Int, strokeColorHex: String?)
-    case image(imageStr: String)
+//    case sticker(color: String, systemImage: String)
+//    case text(string: String, isSerif: Bool, colorHex: String?)
+//    case frame(styleId: Int, strokeColorHex: String?)
+    case sticker(imageStr: String)
+    case text(imageStr: String)
+//    case image(imageStr: String)
 }
 
 struct CanvasItem: Identifiable, Equatable {

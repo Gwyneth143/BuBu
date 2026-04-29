@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// 册子 REST API
@@ -212,20 +211,6 @@ final class DefaultBookStore: BookStore {
         guard (200..<300).contains(http.statusCode) else {
             throw BookStoreError.httpStatus(http.statusCode, String(data: data, encoding: .utf8))
         }
-    }
-}
-
-// MARK: - 稳定本地 `Notebook.id`（与 `serverBookId` 一一对应，避免列表刷新后身份变化）
-
-private enum BookIdentity {
-    static func uuid(forServerBookId serverId: Int) -> UUID {
-        let input = Data("buub.book.\(serverId)".utf8)
-        let digest = SHA256.hash(data: input)
-        let b = Array(digest.prefix(16))
-        return UUID(uuid: (
-            b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
-            b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]
-        ))
     }
 }
 

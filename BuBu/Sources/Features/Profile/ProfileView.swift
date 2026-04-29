@@ -3,24 +3,23 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var env: AppEnvironment
     @Environment(\.openURL) private var openURL
+    @Environment(\.presentLogin) private var presentLogin
     @AppStorage("privacy.biometricLockEnabled") private var biometricLockEnabled = false
     @AppStorage("privacy.passcodeLockEnabled") private var passcodeLockEnabled = false
     @AppStorage("privacy.passcodeValue") private var passcodeValue = ""
+    @AppStorage("icloud.uploadEnabled") private var iCloudUploadEnabled = false
     @State private var storageInfo: CloudStorageInfo?
-    @State private var syncStatusText: String = "未同步"
+    @State private var syncStatusText: String = String.localized("profile.sync.not_synced")
     @State private var isSyncing: Bool = false
     @State private var showingPasscodeSheet = false
     @State private var showingLogoutConfirm = false
-    @State private var passcodeFlow: PasscodeFlow = .set
+    @State private var showingLogoutSyncPrompt = false
+    @State private var showingDeleteCloudDataConfirm = false
+    @State private var passcodeFlow: ProfilePasscodeFlow = .set
     @State private var passcodeInput = ""
     @State private var passcodeConfirmInput = ""
     @State private var passcodeErrorText = ""
     @State private var isUpdatingBiometricToggle = false
-
-    private enum PasscodeFlow {
-        case set
-        case disable
-    }
 
     var body: some View {
         ZStack {
@@ -30,11 +29,18 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     headerSection
-//                    vipCard
-                    iCloudCard
-                    privacySection
-                    legalSection
-                    logoutSection
+                    if env.session.isLoggedIn {
+                        if iCloudUploadEnabled {
+                            iCloudCard
+                        }
+                        iCloudUploadToggleRow
+                        privacySection
+                        legalSection
+                        logoutSection
+                    } else {
+                        notLoggedInSection
+                    }
+                    
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
@@ -42,19 +48,28 @@ struct ProfileView: View {
             }
         }
         .task {
-            await loadICloudInfo()
+            if env.session.isLoggedIn {
+                await loadICloudInfo()
+            }
         }
-        .sheet(isPresented: $showingPasscodeSheet) {
-            passcodeSheet
+        .fullScreenCover(isPresented: $showingPasscodeSheet) {
+            ProfilePasscodeSheet(
+                flow: passcodeFlow,
+                passcodeInput: $passcodeInput,
+                passcodeConfirmInput: $passcodeConfirmInput,
+                errorText: $passcodeErrorText,
+                onSubmit: { submitPasscodeFlow() },
+                onCancel: { cancelPasscodeFlow() }
+            )
         }
         .overlay {
             if showingLogoutConfirm {
                 ConfirmModalView(
-                    title: "退出当前账号？",
-                    message: "退出后你可以重新登录，当前本地数据不会被删除。",
+                    title: String.localized("profile.logout_confirm_title"),
+                    message: String.localized("profile.logout_confirm_message"),
                     iconName: "rectangle.portrait.and.arrow.right",
-                    cancelTitle: "取消",
-                    confirmTitle: "退出",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("profile.logout_confirm_action"),
                     confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
                     onCancel: {
                         showingLogoutConfirm = false
@@ -65,6 +80,43 @@ struct ProfileView: View {
                     }
                 )
             }
+
+            if showingLogoutSyncPrompt {
+                ConfirmModalView(
+                    title: String.localized("profile.logout_sync_prompt_title"),
+                    message: String.localized("profile.logout_sync_prompt_message"),
+                    iconName: "icloud.and.arrow.up",
+                    cancelTitle: String.localized("profile.logout_immediate_action"),
+                    confirmTitle: String.localized("profile.logout_sync_action"),
+                    confirmColor: AppTheme.Colors.primaryColor,
+                    onCancel: {
+                        showingLogoutSyncPrompt = false
+                        env.session.signOut()
+                    },
+                    onConfirm: {
+                        showingLogoutSyncPrompt = false
+                        Task { await syncThenLogout() }
+                    }
+                )
+            }
+
+            if showingDeleteCloudDataConfirm {
+                ConfirmModalView(
+                    title: String.localized("profile.cloud_delete_title"),
+                    message: String.localized("profile.cloud_delete_message"),
+                    iconName: "trash.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.delete"),
+                    confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
+                    onCancel: {
+                        showingDeleteCloudDataConfirm = false
+                    },
+                    onConfirm: {
+                        showingDeleteCloudDataConfirm = false
+                        Task { await triggerDeleteCloudData() }
+                    }
+                )
+            }
         }
     }
 
@@ -72,13 +124,13 @@ struct ProfileView: View {
 
     private var headerSection: some View {
         VStack(spacing: 12) {
-            Text("Profile & Archive")
-                .font(AppTheme.Fonts.sectionTitle)
+            Text(localized: "profile.title")
+                .font(AppTheme.Fonts.navTitle)
                 .kerning(0.8)
 
             ZStack(alignment: .bottomTrailing) {
                 Circle()
-                    .fill(Color(hex: "FDE68A"))
+                    .fill(AppTheme.Colors.primaryColor)
                     .frame(width: 96, height: 96)
                     .overlay(
                         Text(profileAvatarText)
@@ -91,19 +143,54 @@ struct ProfileView: View {
             VStack(spacing: 4) {
                 Text(profileDisplayName)
                     .font(.system(size: 20, weight: .semibold))
-
-                Text("Journaling since January 2023")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                if !env.session.isLoggedIn {
+                    Text(localized: "profile.not_logged_in")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity)
     }
 
     private var profileDisplayName: String {
-        env.session.displayName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        ? (env.session.displayName ?? "用户")
-        : "用户"
+        if !env.session.isLoggedIn {
+            return String.localized("login.title")
+        }
+        if let masked = maskedDisplayName() {
+            return masked
+        }
+        return String.localized("profile.default_user_name")
+    }
+
+    /// 对邮箱 / AppleID 做脱敏，避免完整暴露用户标识
+    private func maskedDisplayName() -> String? {
+        let rawDisplayName = env.session.displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !rawDisplayName.isEmpty {
+            return maskSensitiveIdentifier(rawDisplayName)
+        }
+        let rawUserIdentifier = env.session.userIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !rawUserIdentifier.isEmpty {
+            return maskSensitiveIdentifier(rawUserIdentifier)
+        }
+        return nil
+    }
+
+    private func maskSensitiveIdentifier(_ value: String) -> String {
+        if let atIndex = value.firstIndex(of: "@") {
+            let local = String(value[..<atIndex])
+            let domain = String(value[atIndex...])
+            return maskMiddle(of: local) + domain
+        }
+        return maskMiddle(of: value)
+    }
+
+    private func maskMiddle(of text: String) -> String {
+        let chars = Array(text)
+        guard chars.count > 2 else { return String(chars.prefix(1)) + "*" }
+        let prefix = String(chars.prefix(2))
+        let suffix = String(chars.suffix(2))
+        return prefix + String(repeating: "*", count: min(max(chars.count - 4, 2), 8)) + suffix
     }
 
     private var profileAvatarText: String {
@@ -121,7 +208,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "crown.fill")
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
                     .padding(10)
                     .background(
                         Circle()
@@ -164,11 +251,35 @@ struct ProfileView: View {
 
     // MARK: - iCloud
 
+    private var iCloudUploadToggleRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(String.localized("login.icloud_upload_toggle"), systemImage: "icloud.and.arrow.up.fill")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Toggle("", isOn: $iCloudUploadEnabled)
+                    .labelsHidden()
+            }
+
+            Text(localized: "profile.icloud_upload_hint")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+        )
+    }
+
     private var iCloudCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "icloud")
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
                     .padding(8)
                     .background(
                         Circle()
@@ -176,9 +287,9 @@ struct ProfileView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("iCloud Sync")
+                    Text(localized: "profile.icloud_sync")
                         .font(.subheadline.weight(.semibold))
-                    Text("STORAGE")
+                    Text(localized: "profile.storage")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -195,7 +306,7 @@ struct ProfileView: View {
                 Spacer()
                 Text(syncStatusText)
                     .font(.caption2)
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
             }
 
             GeometryReader { proxy in
@@ -205,11 +316,64 @@ struct ProfileView: View {
                         .frame(height: 6)
 
                     Capsule()
-                        .fill(AppTheme.Colors.tabHighlight)
+                        .fill(AppTheme.Colors.primaryColor)
                         .frame(width: proxy.size.width * usageProgress, height: 6)
                 }
             }
             .frame(height: 6)
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { await triggerRestoreNow() }
+                } label: {
+                    Text(localized: "profile.sync.pull_action")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppTheme.Colors.primaryColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(AppTheme.Colors.primaryColor.opacity(0.35), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSyncing)
+                .opacity(isSyncing ? 0.6 : 1)
+
+                Button {
+                    Task { await triggerUploadNow() }
+                } label: {
+                    Text(localized: "profile.sync.upload_action")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppTheme.Colors.primaryColor)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSyncing || !iCloudUploadEnabled)
+                .opacity((isSyncing || !iCloudUploadEnabled) ? 0.6 : 1)
+            }
+
+            Button {
+                showingDeleteCloudDataConfirm = true
+            } label: {
+                Text(localized: "profile.sync.delete_cloud_action")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(red: 1.0, green: 0.95, blue: 0.95))
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(isSyncing)
+            .opacity(isSyncing ? 0.6 : 1)
         }
         .padding(16)
         .background(
@@ -217,9 +381,6 @@ struct ProfileView: View {
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
         )
-        .onTapGesture {
-            Task { await triggerSyncNow() }
-        }
     }
 
     private var storageText: String {
@@ -238,26 +399,96 @@ struct ProfileView: View {
         await MainActor.run {
             self.storageInfo = info
             if let date = info.lastSyncDate {
-                syncStatusText = "上次同步 \(date.formatted(date: .omitted, time: .shortened))"
+                syncStatusText = String(
+                    format: String.localized("profile.sync.last_synced_at"),
+                    date.formatted(date: .omitted, time: .shortened)
+                )
             } else {
-                syncStatusText = info.isICloudAvailable ? "未同步" : "iCloud 未登录"
+                syncStatusText = info.isICloudAvailable
+                    ? String.localized("profile.sync.not_synced")
+                    : String.localized("profile.sync.icloud_not_signed_in")
             }
         }
     }
 
-    private func triggerSyncNow() async {
+    private func triggerUploadNow() async {
         guard !isSyncing else { return }
+        guard iCloudUploadEnabled else {
+            await MainActor.run {
+                syncStatusText = String.localized("profile.sync.disabled")
+            }
+            return
+        }
         await MainActor.run { isSyncing = true }
         do {
             try await env.cloudSyncService.enableSyncIfNeeded()
+            // 覆盖模式：每次上传前先清空云端旧备份，再以上传结果为准。
+            try? await env.cloudSyncService.clearCloudData()
             try await env.cloudSyncService.syncNow(documentStore: env.documentStore)
             await MainActor.run {
-                syncStatusText = "已同步"
+                syncStatusText = String.localized("profile.sync.synced")
             }
             await loadICloudInfo()
         } catch {
             await MainActor.run {
-                syncStatusText = "同步失败"
+                syncStatusText = "\(String.localized("profile.sync.failed")): \(error.localizedDescription)"
+            }
+        }
+        await MainActor.run { isSyncing = false }
+    }
+
+    private func triggerRestoreNow() async {
+        guard !isSyncing else { return }
+        await MainActor.run { isSyncing = true }
+        do {
+            try await env.cloudSyncService.enableSyncIfNeeded()
+            try await env.cloudSyncService.restoreFromCloud(documentStore: env.documentStore)
+            await MainActor.run {
+                syncStatusText = String.localized("profile.sync.synced")
+            }
+            await loadICloudInfo()
+        } catch {
+            await MainActor.run {
+                syncStatusText = "\(String.localized("profile.sync.failed")): \(error.localizedDescription)"
+            }
+        }
+        await MainActor.run { isSyncing = false }
+    }
+
+    private func triggerDeleteCloudData() async {
+        guard !isSyncing else { return }
+        await MainActor.run { isSyncing = true }
+        do {
+            try await env.cloudSyncService.enableSyncIfNeeded()
+            try await env.cloudSyncService.clearCloudData()
+            await MainActor.run {
+                syncStatusText = String.localized("profile.sync.not_synced")
+            }
+            await loadICloudInfo()
+        } catch {
+            await MainActor.run {
+                syncStatusText = "\(String.localized("profile.sync.failed")): \(error.localizedDescription)"
+            }
+        }
+        await MainActor.run { isSyncing = false }
+    }
+
+    private func syncThenLogout() async {
+        guard !isSyncing else { return }
+        await MainActor.run { isSyncing = true }
+        do {
+            try await env.cloudSyncService.enableSyncIfNeeded()
+            // 与手动上传保持一致：退出前同步采用覆盖模式。
+            try? await env.cloudSyncService.clearCloudData()
+            try await env.cloudSyncService.syncNow(documentStore: env.documentStore)
+            try? await env.cloudSyncService.restoreFromCloud(documentStore: env.documentStore)
+            await MainActor.run {
+                syncStatusText = String.localized("profile.sync.synced")
+                env.session.signOut()
+            }
+        } catch {
+            await MainActor.run {
+                syncStatusText = "\(String.localized("profile.sync.failed")): \(error.localizedDescription)"
             }
         }
         await MainActor.run { isSyncing = false }
@@ -275,7 +506,7 @@ struct ProfileView: View {
 
     private var legalSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("条款与协议")
+            Text(localized: "profile.legal_section")
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
@@ -285,7 +516,7 @@ struct ProfileView: View {
                 } label: {
                     HStack {
                         Image(systemName: "doc.text")
-                        Text("用户须知")
+                        Text(localized: "profile.legal.user_notice")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
@@ -307,7 +538,7 @@ struct ProfileView: View {
                 } label: {
                     HStack {
                         Image(systemName: "hand.raised.fill")
-                        Text("隐私协议")
+                        Text(localized: "profile.legal.privacy_policy")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
@@ -320,6 +551,28 @@ struct ProfileView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+
+                Divider()
+                    .padding(.leading, 16)
+
+//                Button {
+//                    openLegalURL(LegalDocumentURLs.feedback)
+//                } label: {
+//                    HStack {
+//                        Image(systemName: "questionmark.bubble")
+//                        Text(localized: "profile.legal.feedback")
+//                        Spacer()
+//                        Image(systemName: "chevron.right")
+//                            .font(.caption)
+//                            .foregroundColor(.secondary)
+//                    }
+//                    .font(.subheadline)
+//                    .foregroundColor(.primary)
+//                    .padding(.horizontal, 16)
+//                    .padding(.vertical, 12)
+//                    .contentShape(Rectangle())
+//                }
+//                .buttonStyle(.plain)
             }
             .background(
                 RoundedRectangle(cornerRadius: 24)
@@ -338,7 +591,7 @@ struct ProfileView: View {
 
     private var privacySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("隐私与安全")
+            Text(localized: "profile.privacy_security")
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
@@ -346,7 +599,7 @@ struct ProfileView: View {
                 HStack {
                     HStack(spacing: 10) {
                         Image(systemName: "faceid")
-                        Text("面容锁")
+                        Text(localized: "profile.biometric_lock")
                     }
                     .font(.subheadline)
 
@@ -365,7 +618,7 @@ struct ProfileView: View {
 
                 HStack {
                     Image(systemName: "lock")
-                    Text("密码锁")
+                    Text(localized: "profile.passcode")
                     Spacer()
                     Toggle("", isOn: $passcodeLockEnabled)
                         .labelsHidden()
@@ -419,7 +672,9 @@ struct ProfileView: View {
                 return
             }
 
-            let reason = newValue ? "开启面容锁以保护隐私内容" : "关闭面容锁前请先验证身份"
+            let reason = newValue
+                ? String.localized("profile.biometric_enable_reason")
+                : String.localized("profile.biometric_disable_reason")
             let success = await env.authService.authenticate(reason: reason)
             await MainActor.run {
                 if !success {
@@ -431,79 +686,16 @@ struct ProfileView: View {
         }
     }
 
-    private var passcodeSheet: some View {
-        CompatibleNavigationStack {
-            VStack(alignment: .leading, spacing: 14) {
-                if passcodeFlow == .set {
-                    Text("设置 4 位密码")
-                        .font(.headline)
-                    SecureField("输入 4 位数字密码", text: $passcodeInput)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .onChange(of: passcodeInput) { _ in limitPasscodeDigits() }
-                    SecureField("再次输入密码", text: $passcodeConfirmInput)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .onChange(of: passcodeConfirmInput) { _ in limitPasscodeDigits() }
-                } else {
-                    Text("输入密码以关闭密码锁")
-                        .font(.headline)
-                    SecureField("输入当前密码", text: $passcodeInput)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .onChange(of: passcodeInput) { _ in limitPasscodeDigits() }
-                }
-
-                if !passcodeErrorText.isEmpty {
-                    Text(passcodeErrorText)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-
-                Spacer()
-
-                Button {
-                    submitPasscodeFlow()
-                } label: {
-                    Text(passcodeFlow == .set ? "保存密码" : "确认关闭")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            Capsule().fill(Color(hex: "FF5BA8"))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(20)
-            .navigationTitle("密码锁")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
-                        cancelPasscodeFlow()
-                    }
-                }
-            }
-        }
-    }
-
-    private func limitPasscodeDigits() {
-        passcodeInput = String(passcodeInput.filter(\.isNumber).prefix(4))
-        passcodeConfirmInput = String(passcodeConfirmInput.filter(\.isNumber).prefix(4))
-    }
-
     private func submitPasscodeFlow() {
         passcodeErrorText = ""
         switch passcodeFlow {
         case .set:
             guard passcodeInput.count == 4, passcodeConfirmInput.count == 4 else {
-                passcodeErrorText = "请输入 4 位数字密码"
+                passcodeErrorText = String.localized("profile.passcode.error_required_4_digits")
                 return
             }
             guard passcodeInput == passcodeConfirmInput else {
-                passcodeErrorText = "两次输入的密码不一致"
+                passcodeErrorText = String.localized("profile.passcode.error_not_match")
                 return
             }
             passcodeValue = passcodeInput
@@ -512,7 +704,7 @@ struct ProfileView: View {
 
         case .disable:
             guard passcodeInput == passcodeValue else {
-                passcodeErrorText = "密码错误"
+                passcodeErrorText = String.localized("profile.passcode.error_wrong")
                 return
             }
             passcodeLockEnabled = false
@@ -529,18 +721,54 @@ struct ProfileView: View {
         showingPasscodeSheet = false
     }
 
+    private var notLoggedInSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localized: "profile.login_prompt")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Button {
+                presentLogin()
+            } label: {
+                HStack {
+                    Spacer()
+                    Text(localized: "login.fallback_continue")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                }
+                .foregroundColor(.white)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(AppTheme.Colors.primaryColor)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+        )
+    }
+
     private var logoutSection: some View {
         Button {
-            showingLogoutConfirm = true
+            if iCloudUploadEnabled {
+                showingLogoutSyncPrompt = true
+            } else {
+                showingLogoutConfirm = true
+            }
         } label: {
             HStack(alignment: .center,spacing: 10) {
                 Spacer()
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                Text("退出登录")
+                Text(localized: "profile.logout")
                 Spacer()
             }
             .font(.subheadline.weight(.semibold))
-            .foregroundColor(AppTheme.Colors.tabHighlight)
+            .foregroundColor(AppTheme.Colors.primaryColor)
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(

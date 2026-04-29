@@ -15,8 +15,8 @@ struct BookDetailAlbumView: View {
     let photos: [NotebookPage]  //册子的页面集
     @Binding var currentPage: NotebookPage? // 当前展示页
 
-    private let pageWidth: CGFloat = UIScreen.main.bounds.width - 48       //册子宽度
-    private let pageHeight: CGFloat = (UIScreen.main.bounds.width - 48)  * 1.414    //册子高度
+    private let pageWidth: CGFloat = UIScreen.main.bounds.width - 60       //册子宽度
+    private let pageHeight: CGFloat = (UIScreen.main.bounds.width - 60)  * 1.414    //册子高度
 
     @State private var currentIndex: Int = 0        //当前页面index
     @State private var flipIndex: Int = 0             // 当前翻页index
@@ -28,6 +28,8 @@ struct BookDetailAlbumView: View {
     
     private var backFaceIndex: Int { currentIndex + flipDirection } //目标页面
     private var pastMidpoint: Bool { abs(flipAngle) > 90 }
+    private var safeCurrentIndex: Int { min(max(currentIndex, 0), max(photos.count - 1, 0)) }
+    private var safeFlipIndex: Int { min(max(flipIndex, 0), max(photos.count - 1, 0)) }
 
     private var shadowOpacity: Double {
         let a = abs(flipAngle).truncatingRemainder(dividingBy: 180)
@@ -51,10 +53,10 @@ struct BookDetailAlbumView: View {
                                     total: photos.count
                                 )
                                 .frame(width: pageWidth, height: pageHeight)
-                            } else {
+                            } else if safeFlipIndex + 1 < photos.count {
                                 AlbumPageView(
-                                    photo: photos[flipIndex + 1],
-                                    pageNumber: flipIndex + 2,
+                                    photo: photos[safeFlipIndex + 1],
+                                    pageNumber: safeFlipIndex + 2,
                                     total: photos.count
                                 )
                                 .frame(width: pageWidth, height: pageHeight)
@@ -63,13 +65,15 @@ struct BookDetailAlbumView: View {
                         
                         // 翻页中的当前页（正反两面）
                         ZStack {
-                            AlbumPageView(
-                                photo: photos[flipIndex],
-                                pageNumber: flipIndex + 1,
-                                total: photos.count
-                            )
-                            .frame(width: pageWidth, height: pageHeight)
-                            .opacity(pastMidpoint ? 0 : 1)
+                            if !photos.isEmpty {
+                                AlbumPageView(
+                                    photo: photos[safeFlipIndex],
+                                    pageNumber: safeFlipIndex + 1,
+                                    total: photos.count
+                                )
+                                .frame(width: pageWidth, height: pageHeight)
+                                .opacity(pastMidpoint ? 0 : 1)
+                            }
                             
                             if backFaceIndex >= 0, backFaceIndex < photos.count {
                                 AlbumPageView(
@@ -109,34 +113,77 @@ struct BookDetailAlbumView: View {
                         showFullPreview = true
                     }
                     
-                    if notebook.pages.count > 0 {
+                    if photos.count > 0 {
                         HStack(spacing: 40) {
                             Button { flipToPage(direction: -1) } label: {
                                 Label("上一页", systemImage: "chevron.left")
                                     .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(currentIndex > 0
+                                    .foregroundColor(safeCurrentIndex > 0 && photos.count > 1
                                                      ? Color(red: 0.45, green: 0.30, blue: 0.18)
                                                      : Color(red: 0.75, green: 0.68, blue: 0.60))
                             }
-                            .disabled(currentIndex == 0 || phase != .idle)
+                            .disabled(safeCurrentIndex == 0 || photos.count <= 1 || phase != .idle)
                             
                             Button { flipToPage(direction: 1) } label: {
                                 Label("下一页", systemImage: "chevron.right")
                                     .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(currentIndex < photos.count - 1
+                                    .foregroundColor(safeCurrentIndex < photos.count - 1
                                                      ? Color(red: 0.45, green: 0.30, blue: 0.18)
                                                      : Color(red: 0.75, green: 0.68, blue: 0.60))
                             }
-                            .disabled(currentIndex == photos.count - 1 || phase != .idle)
+                            .disabled(safeCurrentIndex >= photos.count - 1 || photos.count <= 1 || phase != .idle)
                         } .padding(.bottom, 16)
+//                            .frame(height: 24)
                     }
                 }
             }
 
         }
         .onAppear {
-            if !photos.isEmpty && notebook.pages.count > 0 {
-                currentPage = photos[currentIndex]
+            if !photos.isEmpty {
+                if let selectedID = currentPage?.id,
+                   let selectedIndex = photos.firstIndex(where: { $0.id == selectedID }) {
+                    currentIndex = selectedIndex
+                    flipIndex = selectedIndex
+                } else {
+                    currentPage = photos[currentIndex]
+                }
+            }
+        }
+        .onChange(of: currentPage?.id) { pageID in
+            guard phase == .idle,
+                  let pageID,
+                  let targetIndex = photos.firstIndex(where: { $0.id == pageID }),
+                  targetIndex != currentIndex else { return }
+            currentIndex = targetIndex
+            flipIndex = targetIndex
+            showBackFace = false
+            flipAngle = 0
+        }
+        .onChange(of: photos.map(\.id)) { _ in
+            guard !photos.isEmpty else {
+                currentIndex = 0
+                flipIndex = 0
+                showBackFace = false
+                flipAngle = 0
+                phase = .idle
+                currentPage = nil
+                return
+            }
+
+            let safeIndex = min(max(currentIndex, 0), photos.count - 1)
+            currentIndex = safeIndex
+            flipIndex = min(max(flipIndex, 0), photos.count - 1)
+            showBackFace = false
+            flipAngle = 0
+            phase = .idle
+
+            if let selectedID = currentPage?.id,
+               let selectedIndex = photos.firstIndex(where: { $0.id == selectedID }) {
+                currentIndex = selectedIndex
+                flipIndex = selectedIndex
+            } else {
+                currentPage = photos[safeIndex]
             }
         }
         .fullScreenCover(isPresented: $showFullPreview) {
@@ -217,7 +264,20 @@ struct BookDetailAlbumView: View {
             currentIndex = destinationIndex
             flipIndex = destinationIndex
             phase = .idle
-            currentPage = photos[currentIndex]
+            guard destinationIndex >= 0 && destinationIndex < photos.count else {
+                showBackFace = false
+                flipAngle = 0
+                phase = .idle
+                currentIndex = min(max(currentIndex, 0), max(photos.count - 1, 0))
+                flipIndex = currentIndex
+                if photos.indices.contains(currentIndex) {
+                    currentPage = photos[currentIndex]
+                } else {
+                    currentPage = nil
+                }
+                return
+            }
+            currentPage = photos[destinationIndex]
         }
     }
 
@@ -261,6 +321,17 @@ struct BookDetailAlbumView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + half) {
                 showBackFace = false
                 flipAngle = 0
+                guard destinationIndex >= 0 && destinationIndex < photos.count else {
+                    phase = .idle
+                    currentIndex = min(max(currentIndex, 0), max(photos.count - 1, 0))
+                    flipIndex = currentIndex
+                    if photos.indices.contains(currentIndex) {
+                        currentPage = photos[currentIndex]
+                    } else {
+                        currentPage = nil
+                    }
+                    return
+                }
                 currentIndex = destinationIndex
                 flipIndex = destinationIndex
                 phase = .idle
@@ -275,12 +346,17 @@ struct BookDetailAlbumView: View {
             let remaining = max(0, photos.count - currentIndex - 1)
             ForEach((0..<min(4, remaining)).reversed(), id: \.self) { i in
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.white.opacity(0.85))
+                    .fill(AppTheme.Colors.shadowBlockColor)
                     .frame(width: pageWidth - CGFloat(i) * 0.5, height: pageHeight)
                     .offset(x: CGFloat(i + 1) * 1.5, y: CGFloat(i) * 0.3)
-                    .shadow(color: .black.opacity(0.06), radius: 2, x: 1, y: 0)
+                    .shadow(color: AppTheme.Colors.shadowColor, radius: 10, x: 2, y: 2)
             }
         }
+//        Rectangle()
+//            .fill(AppTheme.Colors.shadowBlockColor)
+//            .frame(width: pageWidth, height: pageHeight)
+//            .offset(x: 4, y: 4)
+//            .shadow(color: AppTheme.Colors.shadowColor, radius: 10, x: 2, y: 2)
     }
 
 }
@@ -320,7 +396,7 @@ struct AlbumPageView: View {
             if let uiImage = LocalImageLoader.loadUIImage(from: asset.url) {
                 Image(uiImage: uiImage)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
             } else if let source = asset.sourceIdentifier,
                       let remoteURL = URL(string: source),
                       let scheme = remoteURL.scheme?.lowercased(),

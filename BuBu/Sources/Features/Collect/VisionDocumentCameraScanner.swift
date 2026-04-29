@@ -51,8 +51,8 @@ struct VisionDocumentCameraScanner: UIViewControllerRepresentable {
             didFinishWith scan: VNDocumentCameraScan
         ) {
             var images: [UIImage] = []
-            for index in 0..<scan.pageCount {
-                images.append(scan.imageOfPage(at: index))
+            if scan.pageCount > 0 {
+                images = [scan.imageOfPage(at: scan.pageCount - 1)]
             }
 
             onScan(images)
@@ -61,3 +61,4 @@ struct VisionDocumentCameraScanner: UIViewControllerRepresentable {
     }
 }
 #endif
+

@@ -22,8 +22,8 @@ struct DocumentScannerBottomPanel: View {
             HStack(spacing: 8) {
                 Image(systemName: "book.closed")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
-                Text("保存至册子")
+                    .foregroundColor(AppTheme.Colors.primaryColor)
+                Text(localized: "scanner.save_to_notebook")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                 Spacer()
@@ -32,14 +32,14 @@ struct DocumentScannerBottomPanel: View {
             saveTargetCard
 
             Button(action: onSave) {
-                Text("保存")
+                Text(localized: "common.save")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 22)
-                            .fill(AppTheme.Colors.tabHighlight)
+                            .fill(AppTheme.Colors.primaryColor)
                     )
             }
             .buttonStyle(.plain)
@@ -71,10 +71,10 @@ struct DocumentScannerBottomPanel: View {
                                 )
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("当前暂无册子")
+                                Text(localized: "scanner.no_notebooks_title")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(Color(hex: "111827"))
-                                Text("扫描内容会暂时保存在草稿箱中，你可以稍后在书架页创建册子并整理。")
+                                Text(localized: "scanner.no_notebooks_hint")
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
                             }
@@ -121,15 +121,15 @@ struct DocumentScannerBottomPanel: View {
                 .overlay(
                     Image(systemName: "tray.full")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(AppTheme.Colors.tabHighlight)
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("草稿箱")
+                Text(localized: "scanner.drafts")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                     .lineLimit(1)
-                Text("点击切换保存到正式册子")
+                Text(localized: "scanner.tap_switch_to_journal")
                     .font(.system(size: 12))
                     .foregroundColor(Color(hex: "6B7280"))
             }
@@ -144,11 +144,11 @@ struct DocumentScannerBottomPanel: View {
                 .overlay(Text("📒").font(.system(size: 18)))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(current.title.isEmpty ? "Untitled Journal" : current.title)
+                Text(current.title.isEmpty ? String.localized("scanner.untitled_journal") : current.title)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                     .lineLimit(1)
-                Text("点击切换保存到其他册子或草稿箱")
+                Text(localized: "scanner.tap_switch_notebook_or_drafts")
                     .font(.system(size: 12))
                     .foregroundColor(Color(hex: "6B7280"))
             }
@@ -167,10 +167,10 @@ struct DocumentScannerBottomPanel: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("未找到该册子")
+                Text(localized: "scanner.notebook_not_found")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
-                Text("请重新选择保存位置")
+                Text(localized: "scanner.reselect_save_target")
                     .font(.system(size: 12))
                     .foregroundColor(Color(hex: "6B7280"))
             }
@@ -182,15 +182,15 @@ struct DocumentScannerBottomPanel: View {
             HStack(spacing: 8) {
                 Image(systemName: "tag.fill")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
-                Text("标签")
+                    .foregroundColor(AppTheme.Colors.primaryColor)
+                Text(localized: "scanner.tag")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                 Spacer()
             }
 
             HStack(spacing: 8) {
-                TextField("为当前文件添加一个标签…", text: $tagText)
+                TextField(String.localized("scanner.tag_placeholder"), text: $tagText)
                     .font(.system(size: 14))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -211,8 +211,8 @@ struct DocumentScannerBottomPanel: View {
             HStack(spacing: 8) {
                 Image(systemName: "note.text")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
-                Text("备注")
+                    .foregroundColor(AppTheme.Colors.primaryColor)
+                Text(localized: "scanner.note")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                 Spacer()
@@ -238,7 +238,7 @@ struct DocumentScannerBottomPanel: View {
                 }
 
                 if noteText.isEmpty {
-                    Text("有什么想要备注的呢...")
+                    Text(localized: "scanner.note_placeholder")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 18)

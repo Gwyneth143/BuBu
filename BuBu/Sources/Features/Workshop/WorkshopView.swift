@@ -12,20 +12,9 @@ final class WorkshopViewModel: ObservableObject {
     private let coverStore: CoverStore
     private let creatorUserIdProvider: () -> Int?
 
-    /// 避免每次切回 Tab 都重复请求，仅首次进入 Workshop 时拉数
-    private var hasLoadedInitially = false
-
     init(coverStore: CoverStore, creatorUserIdProvider: @escaping () -> Int? = { nil }) {
         self.coverStore = coverStore
         self.creatorUserIdProvider = creatorUserIdProvider
-    }
-
-    /// 仅在页面第一次出现时调用（与下拉刷新 `load()` 区分）
-    @MainActor
-    func loadInitialIfNeeded() async {
-        guard !hasLoadedInitially else { return }
-        hasLoadedInitially = true
-        await load()
     }
 
     @MainActor
@@ -48,7 +37,7 @@ final class WorkshopViewModel: ObservableObject {
                 updated.isCollected = true
                 covers[idx] = updated
             }
-            toastMessage = "添加成功"
+            toastMessage = String.localized("workshop.toast_collect_success")
             Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 await MainActor.run { toastMessage = nil }
@@ -83,7 +72,7 @@ final class WorkshopViewModel: ObservableObject {
         do {
             try await coverStore.deleteSkin(skinId: skinId)
             diySkins.removeAll { $0.id == skinId }
-            toastMessage = "已删除"
+            toastMessage = String.localized("workshop.toast_skin_deleted")
             Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 await MainActor.run { toastMessage = nil }
@@ -99,12 +88,21 @@ final class WorkshopViewModel: ObservableObject {
 }
 
 struct WorkshopView: View {
+    @EnvironmentObject private var env: AppEnvironment
+    @Environment(\.presentLogin) private var presentLogin
     @StateObject private var viewModel: WorkshopViewModel
     @Environment(\.rootTabSelection) private var rootTabSelection
+    @State private var showCoverEditor = false
+    @State private var showingDeleteConfirm = false
+    @State private var deletingSkinID: Int?
 
     /// 与 `RootTabView` 当前选中 Tab 同步（常驻 Tab 时子视图始终在树上，不能仅依赖 `onAppear`）
     private var selectedRootTab: RootTabView.Tab {
         rootTabSelection?.wrappedValue ?? .library
+    }
+
+    private var canCreateMoreDiy: Bool {
+        viewModel.diySkins.count < 3
     }
 
     init(coverStore: CoverStore, creatorUserIdProvider: @escaping () -> Int? = { nil }) {
@@ -117,6 +115,12 @@ struct WorkshopView: View {
     var body: some View {
         CompatibleNavigationStack {
             ZStack {
+                NavigationLink(destination: CoverEditorView(), isActive: $showCoverEditor) {
+                    EmptyView()
+                }
+                .frame(width: 0, height: 0)
+                .opacity(0)
+
                 AppTheme.Colors.appBackground
                     .ignoresSafeArea()
 
@@ -143,10 +147,32 @@ struct WorkshopView: View {
                             .padding(.vertical, 10)
                             .background(Color.black.opacity(0.78))
                             .clipShape(Capsule())
-                            .padding(.bottom, 32)
+                            .padding(.bottom, 88)
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .animation(.easeInOut(duration: 0.2), value: viewModel.toastMessage)
+                }
+
+                if showingDeleteConfirm {
+                    ConfirmModalView(
+                        title: String.localized("common.delete_confirm_title"),
+                        message: String.localized("workshop.delete_skin_confirm_message"),
+                        iconName: "trash.fill",
+                        cancelTitle: String.localized("common.cancel"),
+                        confirmTitle: String.localized("common.delete"),
+                        confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
+                        onCancel: {
+                            showingDeleteConfirm = false
+                            deletingSkinID = nil
+                        },
+                        onConfirm: {
+                            let skinId = deletingSkinID
+                            showingDeleteConfirm = false
+                            deletingSkinID = nil
+                            guard let skinId else { return }
+                            Task { await viewModel.deleteDiySkin(skinId: skinId) }
+                        }
+                    )
                 }
             }
             .navigationTitle("")
@@ -154,26 +180,41 @@ struct WorkshopView: View {
         }
         .onAppear {
             if selectedRootTab == .workshop {
-                Task { await viewModel.loadInitialIfNeeded() }
+                Task { await viewModel.load() }
             }
         }
         .onChange(of: selectedRootTab) { newTab in
             if newTab == .workshop {
-                Task { await viewModel.loadInitialIfNeeded() }
+                Task { await viewModel.load() }
             }
+        }
+        .onChange(of: env.session.isLoggedIn) { loggedIn in
+            if loggedIn {
+                Task { await viewModel.load() }
+            } else {
+                viewModel.covers = []
+                viewModel.diySkins = []
+                viewModel.toastMessage = nil
+                showCoverEditor = false
+            }
+        }
+        .onChange(of: showCoverEditor) { isPresented in
+            // CoverEditor 关闭（保存后或手动返回）时，立即刷新 DIY 设计列表
+            guard !isPresented, env.session.isLoggedIn, selectedRootTab == .workshop else { return }
+            Task { await viewModel.loadSavedCoverImages() }
         }
     }
 
     private var titleSection: some View {
-        Text("Workshop")
-            .font(AppTheme.Fonts.sectionTitle)
+        Text(localized: "workshop.title")
+            .font(AppTheme.Fonts.navTitle)
             .kerning(0.8)
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var previewSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("DIY 设计")
+            Text(localized: "workshop.section_diy")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -194,20 +235,20 @@ struct WorkshopView: View {
     }
 
     private var emptyPreviewCard: some View {
-        NavigationLink {
-            CoverEditorView()
+        Button {
+            openCoverEditorIfAllowed()
         } label: {
             VStack(spacing: 16) {
                 Circle()
-                    .fill(Color(hex: "FFE4F2"))
+                    .fill(Color(hex: "F4F9F4"))
                     .frame(width: 72, height: 72)
                     .overlay(
                         Image(systemName: "paintbrush.pointed")
                             .font(.system(size: 28, weight: .semibold))
-                            .foregroundColor(AppTheme.Colors.tabHighlight)
+                            .foregroundColor(AppTheme.Colors.primaryColor)
                     )
 
-                Text("点击上方按钮，开启DIY皮肤之旅！～\n最多可拥有3款专属皮肤哦～")
+                Text(localized: "workshop.empty_diy_card")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -221,6 +262,12 @@ struct WorkshopView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func requireLogin() -> Bool {
+        if env.session.isLoggedIn { return true }
+        presentLogin()
+        return false
     }
 
     private func coverImageCard(cover: NotebookCover) -> some View {
@@ -247,10 +294,12 @@ struct WorkshopView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
             Button {
-                Task { await viewModel.deleteDiySkin(skinId: cover.id) }
+                guard requireLogin() else { return }
+                deletingSkinID = cover.id
+                showingDeleteConfirm = true
             } label: {
                 Image(systemName: "trash")
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
                     .frame(width: 40, height: 40)
                     .scaledToFill()
             }
@@ -259,8 +308,8 @@ struct WorkshopView: View {
 
     /// 与 `coverImageCard` 同尺寸，点击去 DIY 封面编辑
     private var addPreviewCoverCell: some View {
-        NavigationLink {
-            CoverEditorView()
+        Button {
+            openCoverEditorIfAllowed()
         } label: {
             Rectangle()
                 .fill(Color.white.opacity(0.6))
@@ -273,16 +322,30 @@ struct WorkshopView: View {
                 .overlay(
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundStyle(AppTheme.Colors.tabHighlight.opacity(0.9))
+                        .foregroundStyle(AppTheme.Colors.primaryColor.opacity(0.9))
                 )
                 .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
         }
         .buttonStyle(.plain)
+        .opacity(canCreateMoreDiy ? 1 : 0.45)
+    }
+
+    private func openCoverEditorIfAllowed() {
+        guard requireLogin() else { return }
+        guard canCreateMoreDiy else {
+            viewModel.toastMessage = String.localized("workshop.toast_diy_limit_reached")
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await MainActor.run { viewModel.toastMessage = nil }
+            }
+            return
+        }
+        showCoverEditor = true
     }
 
     private var materialsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("皮肤图库")
+            Text(localized: "workshop.section_skin_gallery")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -308,7 +371,7 @@ struct WorkshopView: View {
                     )
                     .aspectRatio(1.0/1.414, contentMode: .fit)
                     .overlay(
-                        KFImage.url(URL(string: cover.image))
+                        KFImage.url(URL(string: cover.imageUrl))
                             .placeholder { ProgressView() }
                             .onFailureView {
                                 Image(systemName: "photo")
@@ -321,14 +384,14 @@ struct WorkshopView: View {
                     )
 
                 if cover.isPremium {
-                    Text("会员专属")
-                        .foregroundColor(AppTheme.Colors.tabHighlight)
+                    Text(localized: "workshop.badge_member")
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                         .font(.caption2.weight(.semibold))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .stroke(AppTheme.Colors.tabHighlight, lineWidth: 1)
+                                .stroke(AppTheme.Colors.primaryColor, lineWidth: 1)
                         )
                         .padding(8)
                 }
@@ -341,17 +404,18 @@ struct WorkshopView: View {
                         .font(.footnote.weight(.semibold))
                     Text("¥\(cover.price)")
                         .font(.caption2)
-                        .foregroundColor(AppTheme.Colors.tabHighlight)
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                 }
                 Spacer()
                 Button {
+                    guard requireLogin() else { return }
                     if !cover.isCollected {
                         Task { await viewModel.collectSkin(skinId: cover.id) }
                     }else {
                     }
                 } label: {
                     Image(systemName: cover.isCollected ? "heart.fill" : "heart")
-                        .foregroundColor(AppTheme.Colors.tabHighlight)
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                 }
             }
         }

@@ -17,7 +17,7 @@ struct DocumentScannerPickerOverlay: View {
 
             VStack(spacing: 16) {
                 HStack {
-                    Text("选择要保存的册子")
+                    Text(localized: "scanner.picker_title")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color(hex: "111827"))
                     Spacer()
@@ -39,7 +39,7 @@ struct DocumentScannerPickerOverlay: View {
                         .buttonStyle(.plain)
 
                         if notebooks.isEmpty {
-                            Text("目前还没有正式册子，可先存入草稿箱，稍后在书架创建册子再整理。")
+                            Text(localized: "scanner.picker_empty_hint")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,15 +78,15 @@ struct DocumentScannerPickerOverlay: View {
                 .overlay(
                     Image(systemName: "tray.full")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(AppTheme.Colors.tabHighlight)
+                        .foregroundColor(AppTheme.Colors.primaryColor)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("草稿箱")
+                Text(localized: "scanner.drafts")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                     .lineLimit(1)
-                Text("本地暂存，可稍后在书架整理到正式册子")
+                Text(localized: "scanner.picker_draft_subtitle")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
@@ -96,14 +96,14 @@ struct DocumentScannerPickerOverlay: View {
 
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isSelected ? AppTheme.Colors.tabHighlight.opacity(0.08) : Color.white)
+                .fill(isSelected ? AppTheme.Colors.primaryColor.opacity(0.08) : Color.white)
         )
     }
 
@@ -115,7 +115,7 @@ struct DocumentScannerPickerOverlay: View {
                 .overlay(Text("📒").font(.system(size: 18)))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(notebook.title.isEmpty ? "未命名册子" : notebook.title)
+                Text(notebook.title.isEmpty ? String.localized("scanner.untitled_notebook") : notebook.title)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "111827"))
                     .lineLimit(1)
@@ -128,14 +128,14 @@ struct DocumentScannerPickerOverlay: View {
 
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(AppTheme.Colors.tabHighlight)
+                    .foregroundColor(AppTheme.Colors.primaryColor)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isSelected ? AppTheme.Colors.tabHighlight.opacity(0.08) : Color.white)
+                .fill(isSelected ? AppTheme.Colors.primaryColor.opacity(0.08) : Color.white)
         )
     }
 }

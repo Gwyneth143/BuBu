@@ -1,34 +1,55 @@
 /* App & Tabs */
-"tab.library" = "书架";
+"tab.library" = "手帐";
 "tab.capture" = "采集";
 "tab.workshop" = "工坊";
 "tab.profile" = "我的";
 
 /* Bookshelf */
-"bookshelf.title" = "书架";
+"bookshelf.title" = "手帐";
 "bookshelf.search_placeholder" = "搜索你的手账";
-"bookshelf.empty_title" = "书架是空的";
+"bookshelf.empty_title" = "当前还没有手帐哦～";
 "bookshelf.empty_hint" = "点击「+」开始你的第一本手账";
 "bookshelf.create_journal" = "创建手账";
 "bookshelf.category.all" = "全部";
-"bookshelf.category.travel" = "旅行";
-"bookshelf.category.family" = "家庭";
-"bookshelf.category.personal" = "个人";
 
 /* Create Journal */
 "create_journal.title" = "新建手账";
 "create_journal.journal_title" = "手账标题";
-"create_journal.title_placeholder" = "例如：我的孕期日记";
-"create_journal.choose_style" = "选择样式";
-"create_journal.style_solid" = "纯色";
-"create_journal.style_skins" = "皮肤";
+"create_journal.title_placeholder" = "请输入手帐名";
+"create_journal.choose_cover" = "选择封面";
+"create_journal.style_solid" = "系统封面";
+"create_journal.style_skins" = "我的封面";
+"create_journal.style_diy" = "DIY封面";
 "create_journal.category" = "分类";
 "create_journal.add_category" = "添加新分类";
 "create_journal.add_category_subtitle" = "用自定义分类更好地整理你的想法。";
 "create_journal.category_name" = "分类名称";
 "create_journal.category_placeholder" = "输入分类名称...";
 "create_journal.create_btn" = "创建手账";
+"create_journal.create_error" = "创建失败";
 "create_journal.new_category" = "新建分类";
+"create_journal.new_category_error" = "新建分类失败";
+
+/* Book Detail*/
+"bookdetail.toolbar_more" = "更多";
+"bookdetail.back" = "返回";
+"bookdetail.open" = "开启";
+"bookdetail.capture" = "去采集";
+"bookdetail.delete_page" = "删除本页";
+"bookdetail.delete_page_title" = "删除当前页面？";
+"bookdetail.delete_page_message" = "删除后无法恢复，是否继续？";
+"bookdetail.book_delete" = "删除这本手帐？";
+"bookdetail.book_delete_info" = "删除后无法恢复，云端与本地缓存将一并移除。";
+"bookdetail.password.title" = "输入密码";
+"bookdetail.password.subtitle" = "请输入 4 位密码后开启册子";
+"bookdetail.password.delete_subtitle" = "请输入 4 位密码后删除手帐";
+"bookdetail.delete_auth_reason" = "验证身份后删除手帐";
+"bookdetail.password.placeholder" = "4 位密码";
+"bookdetail.password.error" = "密码错误，请重试";
+"bookdetail.tags_button" = "页面标签";
+"bookdetail.tags_modal_title" = "全部页面标签";
+"bookdetail.tags_empty" = "当前页面暂无标签";
+"bookdetail.tags_tap_hint" = "点击标签可跳转至对应页面";
 
 /* DIY Cover */
 "cover.title" = "DIY 封面";
@@ -45,44 +66,158 @@
 "cover.edit.done" = "完成";
 "cover.finish_confirm_title" = "是否完成皮肤创建？";
 "cover.finish_confirm_message" = "预览将保存为图片并返回上一页。";
+"cover.background_required_title" = "提示";
+"cover.background_required_message" = "请设置背景";
+"cover.discard_edit_title" = "放弃编辑并退出？";
+"cover.discard_edit_message" = "当前画布修改尚未保存，退出后将丢失。";
+"cover.discard_edit_confirm" = "放弃并退出";
 "cover.text_serif" = "艺术衬线";
 "cover.text_mono" = "极简等宽";
+"cover.upload_failed_title" = "上传失败";
+"cover.upload_display_name" = "DIY 封面";
 
 /* Workshop */
-"workshop.title" = "工坊 / 商店";
+"workshop.title" = "工坊";
 "workshop.diy_preview" = "DIY 设计预览";
 "workshop.diy_empty" = "还没有 DIY 设计。\n开始创作你的风格吧！";
 "workshop.materials" = "艺术素材";
 "workshop.pro" = "PRO";
 "workshop.task" = "任务";
 "workshop.pts" = "积分";
+"workshop.section_diy" = "DIY 设计";
+"workshop.empty_diy_card" = "点击上方按钮，开启DIY皮肤之旅！～\n最多可拥有3款专属皮肤哦～";
+"workshop.section_skin_gallery" = "皮肤图库";
+"workshop.badge_member" = "会员专属";
+"workshop.toast_collect_success" = "添加成功";
+"workshop.toast_skin_deleted" = "已删除";
+"workshop.toast_diy_limit_reached" = "DIY 设计最多可创建 3 个";
+"workshop.delete_skin_confirm_message" = "删除后将无法恢复，是否继续？";
 
 /* Capture */
-"capture.title" = "灵感 / 采集";
-"capture.tap_to_focus" = "点击对焦";
+"capture.title" = "采集";
 "capture.recent_drafts" = "最近草稿";
+"capture.recent_drafts_empty" = "当前草稿箱为空";
+"capture.draft_delete_message" = "删除后无法恢复，是否继续删除该草稿？";
+"capture.button_scan" = "扫描";
+"capture.button_picture" = "拍照";
+"capture.button_upload" = "上传";
 "capture.mode_scan" = "剪贴档案";
 "capture.mode_photo" = "岁月留影";
 "capture.mode_scan_note" = "像扫描仪一样自动切边并拉正纸张，让杂乱的检查单变身整齐的数字化文档。";
 "capture.mode_photo_note" = "像相机一样保留照片全貌与环境，原汁原味地记录生活瞬间的氛围感。";
+"capture.mode_select_title" = "选择上传方式";
+"capture.mode_select_subtitle" = "你可以从相册或文件中选择需要上传的";
+"capture.mode_select_photo_title" = "从相册选取";
+"capture.mode_select_photo_subtitle" = "支持最近拍摄的照片、截图";
+"capture.mode_select_file_title" = "从文件选取";
+"capture.mode_select_file_subtitle" = "支持图片、PDF文件";
+"capture.upload_message" = "正在载入照片…";
+
+/* Login */
+"login.title" = "欢迎来到 拾页手帐";
+"login.subtitle" = "使用 Apple ID 登录以继续记录与整理";
+"login.feature.privacy" = "隐私优先，数据由你掌控";
+"login.feature.sync" = "iCloud 同步，跨设备无缝衔接";
+"login.feature.workshop" = "DIY 工坊，打造专属封面";
+"login.icloud_upload_toggle" = "iCloud";
+"login.terms_hint" = "继续即表示你同意用户须知与隐私协议";
+"login.fallback_continue" = "继续";
+"login.error_title" = "登录失败";
+"login.error_fallback" = "请稍后重试";
+"login.error.missing_credential" = "未获取到 Apple 登录凭证";
+"login.error.missing_identity_token" = "无法获取 identityToken";
+"login.user_notice" = "用户须知";
+"login.privacy_policy" = "隐私协议";
+"login.close" = "关闭";
+
+/* Document Scanner — 整理台底部面板 */
+"scanner.save_to_notebook" = "保存至手帐";
+"scanner.save" = "保存";
+"scanner.no_notebooks_title" = "当前暂无手帐";
+"scanner.no_notebooks_hint" = "扫描内容会暂时保存在草稿箱中，你可以稍后在手帐页创建手帐并整理。";
+"scanner.drafts" = "草稿箱";
+"scanner.tap_switch_to_journal" = "点击切换保存到正式手帐";
+"scanner.untitled_journal" = "未命名手账";
+"scanner.tap_switch_notebook_or_drafts" = "点击切换保存到其他手帐或草稿箱";
+"scanner.notebook_not_found" = "未找到该手帐";
+"scanner.reselect_save_target" = "请重新选择保存位置";
+"scanner.tag" = "标签";
+"scanner.tag_placeholder" = "为当前文件添加一个标签…";
+"scanner.note" = "备注";
+"scanner.note_placeholder" = "有什么想要备注的呢...";
+
+/* Document Scanner — 保存位置选择弹层 */
+"scanner.picker_title" = "选择要保存的手帐";
+"scanner.picker_empty_hint" = "目前还没有正式手帐，可先存入草稿箱，稍后在书架创建册子再整理。";
+"scanner.picker_draft_subtitle" = "本地暂存，可稍后在书架整理到正式手帐";
+"scanner.untitled_notebook" = "未命名手帐";
+
+/* Document Scanner — 整理台主界面与保存确认 */
+"scanner.nav_title" = "整理台";
+"scanner.save_confirm_title" = "确认保存当前页面？";
+"scanner.save_confirm_cancel" = "再看看";
+"scanner.save_confirm_confirm" = "确认保存";
+"scanner.save_confirm_message_draft" = "保存后会写入草稿箱，你稍后仍可继续编辑";
+"scanner.save_confirm_message_notebook" = "保存后会写入你当前选择的手帐-%@";
+"scanner.unsupported_title" = "当前平台不支持 VisionKit 文档扫描。";
+"scanner.unsupported_hint" = "请在 iPhone 或 iPad 真机上使用该功能。";
 
 /* Profile */
-"profile.title" = "个人与归档";
+"profile.title" = "我的";
 "profile.join_vip" = "加入 VIP";
 "profile.vip_subtitle" = "解锁全部皮肤与自定义主题";
 "profile.join_now" = "立即加入";
 "profile.icloud_sync" = "iCloud 同步";
 "profile.storage" = "存储空间";
+"profile.icloud_upload_hint" = "手帐数据默认仅保存在本地，或由你手动同步至 iCloud，不会自动上传云端。请妥善保留原始数据，卸载 App 后本地数据可能丢失。";
 "profile.up_to_date" = "已是最新";
 "profile.privacy_security" = "隐私与安全";
 "profile.biometric_lock" = "生物识别锁定";
 "profile.passcode" = "密码保护";
-"profile.export_print" = "导出与打印";
-"profile.order_book" = "订购实体书";
-"profile.order_book_subtitle" = "将回忆制作成高质量纪念册";
-"profile.export_pdf" = "导出为 PDF";
-"profile.archive_all" = "归档全部手账";
+"profile.default_user_name" = "用户";
+"profile.not_logged_in" = "未登录";
+"profile.login_prompt" = "登录后可同步 iCloud、管理隐私设置并使用完整功能。";
+"profile.sync.last_synced_at" = "上次同步 %@";
+"profile.sync.not_synced" = "未同步";
+"profile.sync.disabled" = "iCloud 上传已关闭";
+"profile.sync.icloud_not_signed_in" = "iCloud 未登录";
+"profile.sync.synced" = "已同步";
+"profile.sync.failed" = "同步失败";
+"profile.sync.pull_action" = "下拉 iCloud 数据";
+"profile.sync.upload_action" = "上传数据至 iCloud";
+"profile.sync.delete_cloud_action" = "删除 iCloud 数据";
+"profile.cloud_delete_title" = "删除 iCloud 备份数据？";
+"profile.cloud_delete_message" = "该操作会清除云端已备份的页面与图片，且不可恢复。是否继续？";
+"profile.legal_section" = "条款与协议";
+"profile.legal.user_notice" = "用户须知";
+"profile.legal.privacy_policy" = "隐私协议";
+"profile.legal.feedback" = "问题反馈";
+"profile.biometric_enable_reason" = "开启生物识别锁以保护隐私内容";
+"profile.biometric_disable_reason" = "关闭生物识别锁前请先验证身份";
+"profile.passcode.set_title" = "设置 4 位密码";
+"profile.passcode.set_placeholder" = "输入 4 位数字密码";
+"profile.passcode.set_confirm_placeholder" = "再次输入密码";
+"profile.passcode.disable_title" = "输入密码以关闭密码锁";
+"profile.passcode.disable_placeholder" = "输入当前密码";
+"profile.passcode.save" = "保存密码";
+"profile.passcode.confirm_disable" = "确认关闭";
+"profile.passcode.error_required_4_digits" = "请输入 4 位数字密码";
+"profile.passcode.error_not_match" = "两次输入的密码不一致";
+"profile.passcode.error_wrong" = "密码错误";
+"profile.passcode.priority_hint" = "开启后，打开手帐时将优先使用密码验证；若同时开启生物识别，仍以密码为先。";
+"profile.logout" = "退出登录";
+"profile.logout_immediate_action" = "立即退出";
+"profile.logout_sync_action" = "同步数据";
+"profile.logout_sync_prompt_title" = "退出前是否同步最新数据？";
+"profile.logout_sync_prompt_message" = "你已开启 iCloud 上传，建议先同步后再退出。";
+"profile.logout_confirm_title" = "退出当前账号？";
+"profile.logout_confirm_message" = "退出后你可以重新登录，当前本地数据不会被删除。";
+"profile.logout_confirm_action" = "退出";
 
 /* Common */
 "common.cancel" = "取消";
 "common.confirm" = "确认";
+"common.delete" = "删除";
+"common.delete_confirm_title" = "确认删除？";
+"common.save" = "保存";
+"common.ok" = "确定";

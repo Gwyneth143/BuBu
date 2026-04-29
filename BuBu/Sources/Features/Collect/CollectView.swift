@@ -11,6 +11,7 @@ import PDFKit
 
 struct CollectView: View {
     @EnvironmentObject private var env: AppEnvironment
+    @Environment(\.presentLogin) private var presentLogin
     @StateObject private var viewModel: CollectViewModel
     @State private var selectedMode: CollectCaptureMode = .camera
     @State private var showingScanner = false
@@ -21,16 +22,14 @@ struct CollectView: View {
     @State private var showingCropPicker = false
     @State private var selectedFileURL: URL?
     @State private var showingScannerUnavailableAlert = false
+    @State private var showingSystemCamera = false
     @State private var image: UIImage?
     @State private var transformation: Transformation?
     @State private var cropInfo: CropInfo?
     @State private var isDecodingLibraryPhoto = false
     @State private var drafts:[NotebookPage] = []
-
-//    private let : [CollectDraft] = [
-//        .init(title: "\"The first heartbeat…\"", tag: "READ TEXT"),
-//        .init(title: "May 14th – Week 20", tag: "SNAP")
-//    ]
+    @State private var showingDraftDeleteConfirm = false
+    @State private var deletingDraft: NotebookPage?
 
     init() {
         _viewModel = StateObject(wrappedValue: CollectViewModel(
@@ -56,13 +55,12 @@ struct CollectView: View {
                     )
                     CollectRecentDraftsSection(
                         drafts: drafts,
-                        onDraftTagTap: { draft in
-                            if draft.tag == "SNAP" {
-                                Task { await viewModel.analyzeDummyImage() }
-                            }
-                        },
                         onDraftTap: { draft in
                             openDraftEditor(draft)
+                        },
+                        onDraftDeleteTap: { draft in
+                            deletingDraft = draft
+                            showingDraftDeleteConfirm = true
                         }
                     )
                 }
@@ -77,18 +75,18 @@ struct CollectView: View {
 
             if showingUploadOptions {
                 SelectionModalView(
-                    title: "选择上传方式",
-                    subtitle: "你可以从相册或文件中选择要识别的单据。",
+                    title: String.localized("capture.mode_select_title"),
+                    subtitle: String.localized("capture.mode_select_subtitle"),
                     iconName: "square.and.arrow.up",
                     options: [
                         SelectionModalOption(
-                            title: "从相册选取",
-                            subtitle: "支持最近拍摄的照片、截图等",
+                            title: String.localized("capture.mode_select_photo_title" ),
+                            subtitle: String.localized("capture.mode_select_photo_subtitle"),
                             systemImageName: "photo.on.rectangle"
                         ),
                         SelectionModalOption(
-                            title: "从文件选取",
-                            subtitle: "支持文件 App、iCloud Drive 等",
+                            title: String.localized("capture.mode_select_file_title"),
+                            subtitle: String.localized("capture.mode_select_file_subtitle"),
                             systemImageName: "folder"
                         )
                     ],
@@ -108,11 +106,46 @@ struct CollectView: View {
                     }
                 )
             }
+
+            if showingDraftDeleteConfirm {
+                ConfirmModalView(
+                    title: String.localized("common.delete_confirm_title"),
+                    message: String.localized("capture.draft_delete_message"),
+                    iconName: "trash.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.delete"),
+                    confirmColor: Color(red: 0.91, green: 0.26, blue: 0.21),
+                    onCancel: {
+                        showingDraftDeleteConfirm = false
+                        deletingDraft = nil
+                    },
+                    onConfirm: {
+                        let target = deletingDraft
+                        showingDraftDeleteConfirm = false
+                        deletingDraft = nil
+                        if let target {
+                            deleteDraft(target)
+                        }
+                    }
+                )
+            }
         }
         .onAppear {
-            if drafts.isEmpty {
+//            if drafts.isEmpty {
                 loadDrafts()
+//            }
+        }
+        .onChange(of: env.session.isLoggedIn) { loggedIn in
+            if loggedIn {
+                loadDrafts()
+            } else {
+                drafts = []
+                documentScannerPayload = nil
+                showingUploadOptions = false
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .cloudDataDidRestore)) { _ in
+            loadDrafts()
         }
         .fullScreenCover(isPresented: $showingScanner) {
             VisionDocumentCameraScanner { images in
@@ -156,6 +189,7 @@ struct CollectView: View {
                 onDecodingStarted: { isDecodingLibraryPhoto = true }
             ) { img in
                 isDecodingLibraryPhoto = false
+                guard requireLogin() else { return }
                 guard let img else { return }
                 if selectedMode == .camera {
                     image = img
@@ -179,11 +213,33 @@ struct CollectView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingSystemCamera) {
+            #if canImport(UIKit)
+            SystemCameraPicker { capturedImage in
+                showingSystemCamera = false
+                guard let capturedImage else { return }
+//                if selectedMode == .camera {
+//                image = capturedImage
+//                showingCropPicker = true
+//                } else {
+                    documentScannerPayload = DocumentScannerPayload(images: [capturedImage], isScan: false)
+//                }
+            }
+            #else
+            EmptyView()
+            #endif
+        }
         .alert("当前设备不支持文档扫描", isPresented: $showingScannerUnavailableAlert) {
             Button("确定", role: .cancel) {}
         } message: {
             Text("请在支持 VisionKit 的真机上使用扫描，或切换到相册 / 文件模式。")
         }
+    }
+
+    private func requireLogin() -> Bool {
+        if env.session.isLoggedIn { return true }
+        presentLogin()
+        return false
     }
 
     private func loadDrafts() {
@@ -197,6 +253,7 @@ struct CollectView: View {
 
     /// 从 Recent Drafts 进入整理台，沿用同一草稿页 id 与备注 / 标签
     private func openDraftEditor(_ draft: NotebookPage) {
+        guard requireLogin() else { return }
         let images = draft.images.compactMap { LocalImageLoader.loadUIImage(from: $0.url) }
         documentScannerPayload = DocumentScannerPayload(
             images: images,
@@ -204,7 +261,25 @@ struct CollectView: View {
             existingPage: draft
         )
     }
+
+    private func deleteDraft(_ draft: NotebookPage) {
+        Task {
+            guard var book = try? await env.documentStore.fetchNotebook(id: nil) else { return }
+            book.pages.removeAll { $0.id == draft.id }
+            book.pages = book.pages.enumerated().map { index, page in
+                var p = page
+                p.sortIndex = index
+                return p
+            }
+            book.updatedAt = Date()
+            try? await env.documentStore.saveNotebook(book)
+            await MainActor.run {
+                drafts = book.pages
+            }
+        }
+    }
     private func handleFileImportResult(_ result: Result<[URL], Error>) {
+        guard requireLogin() else { return }
         if case .success(let urls) = result, let fileURL = urls.first {
             selectedFileURL = fileURL
             guard let type = UTType(filenameExtension: fileURL.pathExtension) else { return }
@@ -249,6 +324,18 @@ struct CollectView: View {
     }
 
     private func handleScanTap() {
+        if selectedMode == .album {
+            #if canImport(UIKit)
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                showingSystemCamera = true
+            } else {
+                showingScannerUnavailableAlert = true
+            }
+            #else
+            showingScannerUnavailableAlert = true
+            #endif
+            return
+        }
         guard documentScannerSupported else {
             showingScannerUnavailableAlert = true
             return
@@ -264,3 +351,43 @@ struct CollectView: View {
         #endif
     }
 }
+
+#if canImport(UIKit)
+private struct SystemCameraPicker: UIViewControllerRepresentable {
+    let onComplete: (UIImage?) -> Void
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        picker.allowsEditing = false
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onComplete: onComplete)
+    }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        private let onComplete: (UIImage?) -> Void
+
+        init(onComplete: @escaping (UIImage?) -> Void) {
+            self.onComplete = onComplete
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            onComplete(nil)
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]
+        ) {
+            let image = info[.originalImage] as? UIImage
+            onComplete(image)
+        }
+    }
+}
+#endif

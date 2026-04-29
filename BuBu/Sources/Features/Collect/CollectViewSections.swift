@@ -13,7 +13,7 @@ struct CollectDecodingProgressOverlay: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(true)
             ProgressView {
-                Text("正在载入照片…")
+                Text(localized: "capture.upload_message")
                     .font(.subheadline)
             }
             .padding(24)
@@ -29,14 +29,16 @@ struct CollectDecodingProgressOverlay: View {
 
 struct CollectTitleSection: View {
     var body: some View {
-        Text("Inspiration / Capture")
-            .font(AppTheme.Fonts.sectionTitle)
+        Text(localized: "capture.title")
+            .font(AppTheme.Fonts.navTitle)
             .kerning(0.8)
             .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
 struct CollectModeTabsView: View {
+    @EnvironmentObject private var env: AppEnvironment
+    @Environment(\.presentLogin) private var presentLogin
     @Binding var selectedMode: CollectCaptureMode
 
     var body: some View {
@@ -44,20 +46,24 @@ struct CollectModeTabsView: View {
             ForEach(CollectCaptureMode.allCases, id: \.self) { mode in
                 VStack(spacing: 4) {
                     Button {
+                        if !env.session.isLoggedIn {
+                            presentLogin()
+                            return
+                        }
                         selectedMode = mode
                     } label: {
                         Text(localized: mode.rawValue)
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(
                                 selectedMode == mode
-                                    ? AppTheme.Colors.tabHighlight
+                                    ? AppTheme.Colors.primaryColor
                                     : .secondary
                             )
                     }
                     .buttonStyle(.plain)
 
                     Rectangle()
-                        .fill(selectedMode == mode ? AppTheme.Colors.tabHighlight : Color.clear)
+                        .fill(selectedMode == mode ? AppTheme.Colors.primaryColor : Color.clear)
                         .frame(height: 2)
                 }
             }
@@ -69,6 +75,8 @@ struct CollectModeTabsView: View {
 // MARK: - 中央采集区
 
 struct CollectCameraAreaView: View {
+    @EnvironmentObject private var env: AppEnvironment
+    @Environment(\.presentLogin) private var presentLogin
     @Binding var selectedMode: CollectCaptureMode
     var onScanTap: () -> Void
     var onUploadTap: () -> Void
@@ -90,36 +98,50 @@ struct CollectCameraAreaView: View {
                             .frame(width: 140, height: 140, alignment: .center)
                         Text(localized: selectedMode == .camera ? "capture.mode_scan_note" : "capture.mode_photo_note")
                             .font(.system(size: 15, weight: .regular, design: .rounded))
-                            .foregroundColor(AppTheme.Colors.tabHighlight.opacity(0.5))
+                            .foregroundColor(AppTheme.Colors.primaryColor.opacity(0.5))
                             .multilineTextAlignment(.center)
                             .lineSpacing(4)
                             .padding(.horizontal, 24)
 
                         HStack(spacing: 16) {
-                            Button(action: onScanTap) {
-                                Text(selectedMode == .camera ? "扫描" : "拍照")
+                            Button(action: {
+                                if !env.session.isLoggedIn {
+                                    presentLogin()
+                                    return
+                                }
+                                onScanTap()
+                            }) {
+                                Text(selectedMode == .camera ? String.localized("capture.button_scan") : String.localized("capture.button_picture") )
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color(hex: "FF7EB6"))
+                                            .fill(AppTheme.Colors.primaryColor)
                                     )
                             }
+                            .shadow(color: AppTheme.Colors.shadowColor, radius: 6, x: 4, y: 4)
                             .buttonStyle(.plain)
 
-                            Button(action: onUploadTap) {
-                                Text("上传")
+                            Button(action: {
+                                if !env.session.isLoggedIn {
+                                    presentLogin()
+                                    return
+                                }
+                                onUploadTap()
+                            }) {
+                                Text(localized: "capture.button_upload")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color(hex: "FF7EB6"))
+                                            .fill(AppTheme.Colors.primaryColor)
                                     )
                             }
+                            .shadow(color: AppTheme.Colors.shadowColor, radius: 6, x: 4, y: 4)
                             .buttonStyle(.plain)
                         }
                         .padding(.horizontal, 24)
@@ -135,31 +157,39 @@ struct CollectCameraAreaView: View {
 
 struct CollectRecentDraftsSection: View {
     let drafts: [NotebookPage]
-    var onDraftTagTap: (NotebookPage) -> Void
+//    var onDraftTagTap: (NotebookPage) -> Void
     var onDraftTap: (NotebookPage) -> Void
+    var onDraftDeleteTap: (NotebookPage) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Drafts")
+            Text(localized: "capture.recent_drafts")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(drafts) { draft in
-                        CollectDraftCard(
-                            draft: draft,
-                            onTap: { onDraftTap(draft) },
-                            onTagTap: { onDraftTagTap(draft) }
-                        )
+            if drafts.isEmpty {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.85))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 96)
+                    .overlay {
+                        Text(localized: "capture.recent_drafts_empty")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
-
-//                    RoundedRectangle(cornerRadius: 20)
-//                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
-//                        .frame(width: 80, height: 110)
-//                        .foregroundColor(AppTheme.Colors.divider)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(drafts) { draft in
+                            CollectDraftCard(
+                                draft: draft,
+                                onTap: { onDraftTap(draft) },
+                                onDeleteTap: { onDraftDeleteTap(draft) }
+                            )
+                        }
+                    }
+                    .padding(.trailing, 8)
                 }
-                .padding(.trailing, 8)
             }
         }
     }
@@ -168,13 +198,24 @@ struct CollectRecentDraftsSection: View {
 struct CollectDraftCard: View {
     let draft: NotebookPage
     var onTap: () -> Void
-    var onTagTap: () -> Void
+    var onDeleteTap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-//            RoundedRectangle(cornerRadius: 16)
-//                .fill(Color.black.opacity(0.9))
-//                .frame(height: 60)
+            HStack {
+                Spacer()
+                Button(action: onDeleteTap) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(red: 0.91, green: 0.26, blue: 0.21))
+                        .padding(6)
+                        .background(
+                            Circle().fill(Color(red: 1.0, green: 0.95, blue: 0.95))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
             Group {
                 if let uiImage = LocalImageLoader.loadUIImage(from: draft.images.first?.url) {
                     Image(uiImage: uiImage)
@@ -201,7 +242,7 @@ struct CollectDraftCard: View {
                 .onTapGesture(perform: onTap)
 
             if draft.tag.count > 0 {
-                Button(action: onTagTap) {
+                Button(action: onTap) {
                     Text("标签："+draft.tag)
                         .font(.caption)
                         .foregroundColor(.secondary)

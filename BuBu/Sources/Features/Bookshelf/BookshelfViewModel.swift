@@ -19,7 +19,7 @@ final class BookshelfViewModel: ObservableObject {
 
     @MainActor
     func load() async {
-        await loadBooks(categorySelection: "全部")
+        await loadBooks(categorySelection: String.localized("bookshelf.category.all"))
         await loadCategories()
     }
 
@@ -30,7 +30,7 @@ final class BookshelfViewModel: ObservableObject {
         defer { isLoading = false }
 
         let trimmed = categorySelection.trimmingCharacters(in: .whitespacesAndNewlines)
-        let apiCategoryName: String? = (trimmed == "全部") ? nil : trimmed
+        let apiCategoryName: String? = (trimmed == String.localized("bookshelf.category.all")) ? nil : trimmed
 
         do {
             var merged: [Notebook] = []

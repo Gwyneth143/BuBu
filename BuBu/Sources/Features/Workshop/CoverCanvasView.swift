@@ -71,10 +71,11 @@ struct DraggableCanvasItem: View {
     private func halfSize(for content: CanvasContent, scale: CGFloat = 1) -> (CGFloat, CGFloat) {
         let base: (CGFloat, CGFloat)
         switch content {
-        case .sticker: base = (22, 22)
-        case .text: base = (50, 12)
-        case .frame: base = (40, 50)
-        case .image: base = (22, 22)
+        case .sticker: base = (36, 36)
+        case .text: base = (36, 18)
+//        case .text: base = (50, 12)
+//        case .frame: base = (40, 50)
+//        case .image: base = (22, 22)
         }
         return (base.0 * scale, base.1 * scale)
     }
@@ -82,28 +83,39 @@ struct DraggableCanvasItem: View {
     @ViewBuilder
     private func canvasContent(for content: CanvasContent) -> some View {
         switch content {
-        case .sticker(let colorHex, let systemImage):
-            Circle()
-                .fill(Color(hex: colorHex))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: systemImage)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.black.opacity(0.6))
-                )
-        case .text(let string, let isSerif, let colorHex):
-            Text(string)
-                .font(isSerif ? .system(size: 16, weight: .regular, design: .serif) : .system(size: 14, weight: .medium))
-                .foregroundColor(colorHex.flatMap { Color(hex: $0) } ?? .black.opacity(0.85))
-                .lineLimit(2)
-        case .frame(let styleId, let strokeColorHex):
-            RoundedRectangle(cornerRadius: styleId == 0 ? 12 : 20)
-                .stroke(Color(hex: strokeColorHex ?? "9C7A63"), lineWidth: 3)
-                .frame(width: 80, height: 100)
-        case .image(let imageStr):
+        case .sticker(let imageStr):
             Image(imageStr)
-                .frame(width: 36,height: 36)
+                .resizable()
+                .frame(width: 72,height: 72)
                 .scaledToFill()
+        case .text(let imageStr):
+            Image(imageStr)
+//                .resizable()
+                .frame(width: 72,height: 36)
+                .scaledToFill()
+//        case .sticker(let colorHex, let systemImage):
+//            Circle()
+//                .fill(Color(hex: colorHex))
+//                .frame(width: 44, height: 44)
+//                .overlay(
+//                    Image(systemName: systemImage)
+//                        .font(.system(size: 18, weight: .semibold))
+//                        .foregroundColor(.black.opacity(0.6))
+//                )
+//        case .text(let string, let isSerif, let colorHex):
+//            Text(string)
+//                .font(isSerif ? .system(size: 16, weight: .regular, design: .serif) : .system(size: 14, weight: .medium))
+//                .foregroundColor(colorHex.flatMap { Color(hex: $0) } ?? .black.opacity(0.85))
+//                .lineLimit(2)
+//        case .frame(let styleId, let strokeColorHex):
+//            RoundedRectangle(cornerRadius: styleId == 0 ? 12 : 20)
+//                .stroke(Color(hex: strokeColorHex ?? "9C7A63"), lineWidth: 3)
+//                .frame(width: 80, height: 100)
+//        case .image(let imageStr):
+//            Image(imageStr)
+//                .resizable()
+//                .frame(width: 72,height: 72)
+//                .scaledToFill()
         }
     }
 }

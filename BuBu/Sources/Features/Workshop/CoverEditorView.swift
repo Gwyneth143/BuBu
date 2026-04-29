@@ -6,19 +6,31 @@ struct CoverEditorView: View {
 //    @State private var title: String = "My Journal"
     @State private var selectedTab: EditorTab = .sticker
     @State private var canvasItems: [CanvasItem] = []
-    @State private var coverBackground: Color = Color(hex: "D7C8C2")
+    @State private var coverBackground: Color = AppTheme.Colors.appBackground
     @State private var coverBackImage: String?
     @State private var editingItemId: UUID?
     @State private var showingFinishConfirmation = false
+    @State private var showingBackgroundRequiredModal = false
+    @State private var showingDiscardEditModal = false
     @State private var uploadErrorMessage: String?
     @EnvironmentObject private var env: AppEnvironment
     @Environment(\.dismiss) private var dismiss
     @Environment(\.tabBarHidden) private var tabBarHidden
 
-    private enum EditorTab: String, CaseIterable {
-        case sticker = "贴画"
-        case text = "文字"
-        case bg = "背景"
+    private enum EditorTab: CaseIterable {
+        case sticker, text, bg
+
+        var titleKey: String {
+            switch self {
+            case .sticker: return "cover.tab.stickers"
+            case .text: return "cover.tab.text"
+            case .bg: return "cover.tab.bg"
+            }
+        }
+    }
+
+    private var hasCanvasEdits: Bool {
+        !canvasItems.isEmpty || coverBackImage != nil
     }
 
     var body: some View {
@@ -38,28 +50,96 @@ struct CoverEditorView: View {
                 editCardOverlay(itemId: id)
             }
         }
-        .navigationTitle("DIY Cover")
+        .overlay {
+            if showingBackgroundRequiredModal {
+                ConfirmModalView(
+                    title: String.localized("cover.background_required_title"),
+                    message: String.localized("cover.background_required_message"),
+                    iconName: "exclamationmark.bubble.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.ok"),
+                    onCancel: { showingBackgroundRequiredModal = false },
+                    onConfirm: { showingBackgroundRequiredModal = false }
+                )
+                .transition(.opacity)
+            }
+        }
+        .overlay {
+            if showingDiscardEditModal {
+                ConfirmModalView(
+                    title: String.localized("cover.discard_edit_title"),
+                    message: String.localized("cover.discard_edit_message"),
+                    iconName: "exclamationmark.triangle.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("cover.discard_edit_confirm"),
+                    onCancel: { showingDiscardEditModal = false },
+                    onConfirm: {
+                        showingDiscardEditModal = false
+                        dismiss()
+                    }
+                )
+                .transition(.opacity)
+            }
+        }
+        .overlay {
+            if showingFinishConfirmation {
+                ConfirmModalView(
+                    title: String.localized("cover.finish_confirm_title"),
+                    message: String.localized("cover.finish_confirm_message"),
+                    iconName: "checkmark.circle.fill",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.confirm"),
+                    onCancel: { showingFinishConfirmation = false },
+                    onConfirm: {
+                        showingFinishConfirmation = false
+                        Task { await saveCanvasAsImage() }
+                    }
+                )
+                .transition(.opacity)
+            }
+        }
+        .navigationTitle(String.localized("cover.title"))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+//            ToolbarItem(placement: .navigationBarTrailing) {
+//                Button(String.localized("cover.edit.done")) {
+//                    showingFinishConfirmation = true
+//                }
+//            }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    if hasCanvasEdits {
+                        showingDiscardEditModal = true
+                    } else {
+                        dismiss()
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                }
+                .accessibilityLabel(Text(localized: "bookdetail.back"))
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(String.localized("cover.edit.done")) {
-                    showingFinishConfirmation = true
+                Button {
+                    if coverBackImage == nil {
+                        showingBackgroundRequiredModal = true
+                    } else {
+                        showingFinishConfirmation = true
+                    }
+                } label: {
+                   Text(localized: "cover.edit.done")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
                 }
             }
         }
-        .alert(String.localized("cover.finish_confirm_title"), isPresented: $showingFinishConfirmation) {
-            Button(String.localized("common.cancel"), role: .cancel) {}
-            Button(String.localized("common.confirm")) {
-                Task { await saveCanvasAsImage() }
-            }
-        } message: {
-            Text(String.localized("cover.finish_confirm_message"))
-        }
-        .alert("上传失败", isPresented: Binding(
+        .alert(String.localized("cover.upload_failed_title"), isPresented: Binding(
             get: { uploadErrorMessage != nil },
             set: { if !$0 { uploadErrorMessage = nil } }
         )) {
-            Button("确定", role: .cancel) { uploadErrorMessage = nil }
+            Button(String.localized("common.ok"), role: .cancel) { uploadErrorMessage = nil }
         } message: {
             Text(uploadErrorMessage ?? "")
         }
@@ -106,10 +186,10 @@ struct CoverEditorView: View {
                         .fill(coverBackground)
                         .frame(width: CoverEditorLayout.previewWidth, height: CoverEditorLayout.previewHeight)
                         .shadow(color: Color.black.opacity(0.15), radius: 14, x: 0, y: 8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 32)
-                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                        )
+//                        .overlay(
+//                            RoundedRectangle(cornerRadius: 32)
+//                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+//                        )
                     if let image = coverBackImage {
                         Image(image)
                             .resizable()
@@ -127,12 +207,12 @@ struct CoverEditorView: View {
                 }
                 .frame(width: CoverEditorLayout.previewWidth, height: CoverEditorLayout.previewHeight)
                 
-                Text("LIVE PREVIEW")
+                Text(String.localized("cover.live_preview"))
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .tracking(2)
                 
-                Text("拖出画布外可删除元素")
+                Text(String.localized("cover.drag_out_hint"))
                     .font(.caption2)
                     .foregroundColor(.secondary.opacity(0.9))
                     .padding(.top, 4)
@@ -150,37 +230,53 @@ struct CoverEditorView: View {
         canvasItems.removeAll { $0.id == id }
     }
     
-    private func addItem(image: String) {
-        canvasItems.append(CanvasItem(
-            id: UUID(),
-            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
-            content: .image(imageStr: image)
-        ))
-    }
+        private func addSticker(image: String) {
+            canvasItems.append(CanvasItem(
+                id: UUID(),
+                position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
+                content: .sticker(imageStr: image)
+            ))
+        }
 
-    private func addSticker(colorHex: String, systemImage: String) {
-        canvasItems.append(CanvasItem(
-            id: UUID(),
-            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
-            content: .sticker(color: colorHex, systemImage: systemImage)
-        ))
-    }
+        private func addText(image: String) {
+            canvasItems.append(CanvasItem(
+                id: UUID(),
+                position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
+                content: .text(imageStr: image)
+            ))
+        }
+    
+//    private func addItem(image: String) {
+//        canvasItems.append(CanvasItem(
+//            id: UUID(),
+//            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
+//            content: .image(imageStr: image)
+//        ))
+//    }
 
-    private func addText(string: String, isSerif: Bool) {
-        canvasItems.append(CanvasItem(
-            id: UUID(),
-            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.45),
-            content: .text(string: string, isSerif: isSerif, colorHex: nil)
-        ))
-    }
-
-    private func addFrame(styleId: Int) {
-        canvasItems.append(CanvasItem(
-            id: UUID(),
-            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
-            content: .frame(styleId: styleId, strokeColorHex: nil)
-        ))
-    }
+//    private func addSticker(colorHex: String, systemImage: String) {
+//        canvasItems.append(CanvasItem(
+//            id: UUID(),
+//            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
+//            content: .sticker(color: colorHex, systemImage: systemImage)
+//        ))
+//    }
+//
+//    private func addText(string: String, isSerif: Bool) {
+//        canvasItems.append(CanvasItem(
+//            id: UUID(),
+//            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.45),
+//            content: .text(string: string, isSerif: isSerif, colorHex: nil)
+//        ))
+//    }
+//
+//    private func addFrame(styleId: Int) {
+//        canvasItems.append(CanvasItem(
+//            id: UUID(),
+//            position: CGPoint(x: CoverEditorLayout.previewWidth * 0.5, y: CoverEditorLayout.previewHeight * 0.5),
+//            content: .frame(styleId: styleId, strokeColorHex: nil)
+//        ))
+//    }
 
     private func setBackground(_ image: String) {
         coverBackImage = image
@@ -208,7 +304,7 @@ struct CoverEditorView: View {
             try await env.coverStore.uploadSkinImage(
                 fileData: pngData,
                 fileName: fileName,
-                displayName: "diy skin",
+                displayName: String.localized("cover.upload_display_name"),
                 type: 2,
                 creatorUserId: creatorId
             )
@@ -274,7 +370,7 @@ struct CoverEditorView: View {
                 Button {
                     selectedTab = tab
                 } label: {
-                    Text(tab.rawValue)
+                    Text(String.localized(tab.titleKey))
                         .font(.caption.weight(.semibold))
                         .foregroundColor(
                             selectedTab == tab
@@ -285,7 +381,7 @@ struct CoverEditorView: View {
                         .padding(.vertical, 8)
                         .background(
                             Capsule()
-                                .fill(selectedTab == tab ? Color.blue : Color.clear)
+                                .fill(selectedTab == tab ? AppTheme.Colors.primaryColor : Color.clear)
                         )
                 }
                 .buttonStyle(.plain)
@@ -338,7 +434,7 @@ struct CoverEditorView: View {
         return LazyVGrid(columns: cols, alignment: .leading, spacing: 18) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, image in
                 Button {
-                    addItem(image: image)
+                    addSticker(image: image)
                 } label: {
                     ZStack {
                         Image(image)
@@ -364,7 +460,7 @@ struct CoverEditorView: View {
         return LazyVGrid(columns: Self.textGridColumns, alignment: .leading, spacing: 18) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, image in
                 Button {
-                    addItem(image: image)
+                    addText(image: image)
                 } label: {
                     ZStack {
                         Image(image)

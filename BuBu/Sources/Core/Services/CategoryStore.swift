@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 protocol CategoryStore {
     /// 当前已存在的分类列表（供 UI 直接读取）
@@ -33,18 +32,11 @@ enum CategoryStoreError: LocalizedError {
 /// 管理用户已创建的分类列表，支持新增
 final class InMemoryCategoryStore: CategoryStore {
     private(set) var categories: [String] = []
-    private let storageKey = "user.categories"
     private let tokenProvider: () -> String?
     private let endpoint = "https://xsmb.world/categories"
 
     init(tokenProvider: @escaping () -> String? = { nil }) {
         self.tokenProvider = tokenProvider
-        // 从本地持久化（UserDefaults）恢复用户真实创建的分类
-        if let data = UserDefaults.standard.array(forKey: storageKey) as? [String] {
-            categories = data
-        } else {
-            categories = []
-        }
     }
     
     func fetchAllCategory() async throws -> [String] {
@@ -97,7 +89,6 @@ final class InMemoryCategoryStore: CategoryStore {
         }
 
         categories = merged
-        UserDefaults.standard.set(categories, forKey: storageKey)
         return categories
     }
 
@@ -132,6 +123,5 @@ final class InMemoryCategoryStore: CategoryStore {
         }
 
         categories.append(trimmed)
-        UserDefaults.standard.set(categories, forKey: storageKey)
     }
 }

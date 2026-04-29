@@ -53,6 +53,22 @@ struct DocumentScannerView: View {
         _selectedNotebookID = State(initialValue: initialNotebookID)
     }
 
+    /// 与「保存至册子」选中态一致：以 `selectedNotebookID` + `notebooks` 为准，不单独依赖 `bookName`（避免默认选中第一本时未同步 `bookName`）
+    private var saveConfirmMessage: String {
+        guard let id = selectedNotebookID else {
+            return String.localized("scanner.save_confirm_message_draft")
+        }
+        let displayTitle: String
+        if let nb = notebooks.first(where: { $0.serverBookId == id }) {
+            displayTitle = nb.title.isEmpty ? String.localized("scanner.untitled_journal") : nb.title
+        } else if let name = bookName, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            displayTitle = name
+        } else {
+            displayTitle = String.localized("scanner.untitled_journal")
+        }
+        return String(format: String.localized("scanner.save_confirm_message_notebook"), displayTitle)
+    }
+
     var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
@@ -93,13 +109,12 @@ struct DocumentScannerView: View {
                 )
             }
             if showingSaveConfirm {
-                let message = bookName != nil ? "保存后会写入你当前选择的册子-\(bookName!)" : "保存后会写入草稿箱，你稍后仍可继续编辑"
                 ConfirmModalView(
-                    title: "确认保存当前页面？",
-                    message: message,
+                    title: String.localized("scanner.save_confirm_title"),
+                    message: saveConfirmMessage,
                     iconName: "tray.and.arrow.down.fill",
-                    cancelTitle: "再看看",
-                    confirmTitle: "确认保存",
+                    cancelTitle: String.localized("scanner.save_confirm_cancel"),
+                    confirmTitle: String.localized("scanner.save_confirm_confirm"),
                     onCancel: {
                         showingSaveConfirm = false
                     },
@@ -111,15 +126,17 @@ struct DocumentScannerView: View {
             }
         }
         .background(AppTheme.Colors.appBackground.ignoresSafeArea())
-        .navigationTitle("整理台")
+        .navigationTitle(String.localized("scanner.nav_title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("关闭") {
+                Button {
                     onDismiss?()
                     dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .foregroundColor(AppTheme.Colors.navTitleColor)
                 }
-                .foregroundColor(.black)
             }
         }
         .onAppear {
@@ -127,24 +144,24 @@ struct DocumentScannerView: View {
                 loadNotebooks()
             }
         }
-        .fullScreenCover(item: $editingScan) { scan in
-            CompatibleNavigationStack {
-                if scan.index < scannedImages.count {
-                    ScanImageEditorView(
-                        image: scannedImages[scan.index],
-                        onCancel: {
-                            editingScan = nil
-                        },
-                        onSave: { updated in
-                            scannedImages[scan.index] = updated
-                            editingScan = nil
-                        }
-                    )
-                } else {
-                    Color.clear
-                }
-            }
-        }
+//        .fullScreenCover(item: $editingScan) { scan in
+//            CompatibleNavigationStack {
+//                if scan.index < scannedImages.count {
+//                    ScanImageEditorView(
+//                        image: scannedImages[scan.index],
+//                        onCancel: {
+//                            editingScan = nil
+//                        },
+//                        onSave: { updated in
+//                            scannedImages[scan.index] = updated
+//                            editingScan = nil
+//                        }
+//                    )
+//                } else {
+//                    Color.clear
+//                }
+//            }
+//        }
     }
 
     private func handleSelectDraft() {
@@ -201,6 +218,7 @@ struct DocumentScannerView: View {
                 updatedNotebook.updatedAt = Date()
 
                 try? await env.documentStore.saveNotebook(updatedNotebook)
+                try? await touchBookUpdatedAt(bookId: notebookID)
 
                 // 从草稿箱移入册子时，删除草稿中的同 id 页
                 if let ep = existingPage, ep.notebookID == 0 {
@@ -252,6 +270,30 @@ struct DocumentScannerView: View {
                     try? await env.documentStore.saveNotebook(note)
                 }
             }
+        }
+    }
+
+    /// 调用服务端 `POST /books/update`，刷新册子更新时间
+    private func touchBookUpdatedAt(bookId: Int) async throws {
+        guard bookId > 0 else { return }
+        guard let token = env.session.accessToken?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !token.isEmpty else { return }
+        guard let url = URL(string: "https://xsmb.world/books/update") else { return }
+
+        struct Body: Encodable {
+            let bookId: Int
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(Body(bookId: bookId))
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            return
         }
     }
 
@@ -333,13 +375,16 @@ struct DocumentScannerView: View {
                     }
                     if selectedNotebookID == nil ||
                         !notebooks.contains(where: { $0.serverBookId == selectedNotebookID }) {
-                        selectedNotebookID = notebooks.first?.serverBookId
+                        let first = notebooks.first
+                        selectedNotebookID = first?.serverBookId
+                        bookName = first?.title
                     }
                 }
             } catch {
                 await MainActor.run {
                     notebooks = []
                     selectedNotebookID = nil
+                    bookName = nil
                 }
             }
         }
@@ -370,9 +415,9 @@ struct DocumentScannerView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
                 .foregroundColor(.orange)
-            Text("当前平台不支持 VisionKit 文档扫描。")
+            Text(localized: "scanner.unsupported_title")
                 .font(.headline)
-            Text("请在 iPhone 或 iPad 真机上使用该功能。")
+            Text(localized: "scanner.unsupported_hint")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }

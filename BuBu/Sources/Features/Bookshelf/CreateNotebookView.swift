@@ -19,15 +19,24 @@ struct CreateNotebookView: View {
     private enum StyleTab: String, CaseIterable {
         case solid = "系统封面"
         case skins = "我的封面"
-        case diy = "我的DIY"
+        case diy = "DIY封面"
     }
 
     @State private var solidOptions: [NotebookCover] = []
 
     @State private var skinOptions: [NotebookCover] = []
+    
+    @State private var diyOptions: [NotebookCover] = []
 
     private var currentCoverOptions: [NotebookCover] {
-        selectedStyleTab == .solid ? solidOptions : skinOptions
+        switch selectedStyleTab {
+        case .solid:
+            solidOptions
+        case .skins:
+            skinOptions
+        case .diy:
+            diyOptions
+        }
     }
 
     var body: some View {
@@ -59,6 +68,7 @@ struct CreateNotebookView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
+                            .foregroundColor(AppTheme.Colors.navTitleColor)
                     }
                 }
             }
@@ -106,17 +116,30 @@ struct CreateNotebookView: View {
                     // 未登录或接口失败时保持空数组
                 }
             }
+            Task {
+                do {
+                    let remoteSkins = try await env.coverStore.fetchAllCovers(query: CoverQuery(type:2))
+                    await MainActor.run {
+                        diyOptions = remoteSkins
+                        if selectedStyleTab == .diy, selectedCover == nil {
+                            selectedCover = remoteSkins.first
+                        }
+                    }
+                } catch {
+                    // 未登录或接口失败时保持空数组
+                }
+            }
         }
         .overlay {
             if showingAddCategory {
                 InputModalView(
-                    title: "新增分类",
-                    subtitle: "Organize your thoughts better with a custom category.",
-                    inputLabel: "分类",
-                    placeholder: "输入分类名称...",
+                    title: String.localized("create_journal.add_category"),
+                    subtitle: String.localized("create_journal.add_category_subtitle"),
+                    inputLabel: String.localized("create_journal.category"),
+                    placeholder: String.localized("create_journal.category_placeholder"),
                     text: $newCategoryName,
-                    cancelTitle: "取消",
-                    confirmTitle: "确定",
+                    cancelTitle: String.localized("common.cancel"),
+                    confirmTitle: String.localized("common.confirm"),
                     onCancel: {
                         showingAddCategory = false
                         newCategoryName = ""
@@ -143,19 +166,19 @@ struct CreateNotebookView: View {
                 )
             }
         }
-        .alert("添加分类失败", isPresented: Binding(
+        .alert(String.localized("create_journal.create_error"), isPresented: Binding(
             get: { categoryErrorMessage != nil },
             set: { if !$0 { categoryErrorMessage = nil } }
         )) {
-            Button("确定", role: .cancel) { categoryErrorMessage = nil }
+            Button(String.localized("common.confirm"), role: .cancel) { categoryErrorMessage = nil }
         } message: {
             Text(categoryErrorMessage ?? "")
         }
-        .alert("创建失败", isPresented: Binding(
+        .alert(String.localized("create_journal.new_category_error"), isPresented: Binding(
             get: { createErrorMessage != nil },
             set: { if !$0 { createErrorMessage = nil } }
         )) {
-            Button("确定", role: .cancel) { createErrorMessage = nil }
+            Button(String.localized("common.confirm"), role: .cancel) { createErrorMessage = nil }
         } message: {
             Text(createErrorMessage ?? "")
         }
@@ -163,11 +186,11 @@ struct CreateNotebookView: View {
 
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("名称")
+            Text(localized: "create_journal.journal_title")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            TextField("请输入手帐名", text: $title)
+            TextField(String.localized("create_journal.title_placeholder"), text: $title)
                 .font(AppTheme.Fonts.body)
                 .focused($isTitleFieldFocused)
                 .padding(.horizontal, 16)
@@ -183,7 +206,7 @@ struct CreateNotebookView: View {
 
     private var styleSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("封面皮肤")
+            Text(localized: "create_journal.choose_cover")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -203,7 +226,7 @@ struct CreateNotebookView: View {
                             .padding(.vertical, 8)
                             .background(
                                 Capsule()
-                                    .fill(selectedStyleTab == tab ? AppTheme.Colors.tabHighlight : Color.clear)
+                                    .fill(selectedStyleTab == tab ? AppTheme.Colors.primaryColor : Color.clear)
                             )
                     }
                     .buttonStyle(.plain)
@@ -226,7 +249,7 @@ struct CreateNotebookView: View {
                                 RoundedRectangle(cornerRadius: 0)
                                     .stroke(
                                         selectedCover?.id == option.id
-                                        ? AppTheme.Colors.tabHighlight
+                                        ? AppTheme.Colors.primaryColor
                                         : Color.clear,
                                         lineWidth: 2
                                     )
@@ -268,7 +291,7 @@ struct CreateNotebookView: View {
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("分类")
+            Text(localized: "create_journal.category")
                 .font(.caption)
                 .foregroundColor(.secondary)
             let columns = [GridItem(.adaptive(minimum: 100), spacing: 8)]
@@ -290,7 +313,7 @@ struct CreateNotebookView: View {
         } label: {
             Text(category)
             .font(.caption)
-            .foregroundColor(isSelected ? AppTheme.Colors.tabHighlight : .primary)
+            .foregroundColor(isSelected ? AppTheme.Colors.primaryColor : .primary)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
@@ -299,7 +322,7 @@ struct CreateNotebookView: View {
                     .fill(isSelected ? Color.white : Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(isSelected ? AppTheme.Colors.tabHighlight : Color.gray.opacity(0.3), lineWidth: 1)
+                            .stroke(isSelected ? AppTheme.Colors.primaryColor : Color.gray.opacity(0.3), lineWidth: 1)
                     )
             )
         }
@@ -314,16 +337,16 @@ struct CreateNotebookView: View {
             HStack(spacing: 6) {
                 Image(systemName: "plus.circle.fill")
                     .font(.caption)
-                Text("新建分类")
+                Text(localized: "create_journal.new_category" )
                     .font(.caption)
             }
-            .foregroundColor(AppTheme.Colors.tabHighlight)
+            .foregroundColor(AppTheme.Colors.primaryColor)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(AppTheme.Colors.tabHighlight, lineWidth: 1)
+                    .stroke(AppTheme.Colors.primaryColor, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -349,12 +372,11 @@ struct CreateNotebookView: View {
                     createErrorMessage = nil
                 }
                 do {
-                    let notebook = try await env.bookStore.createBook(
+                    let _ = try await env.bookStore.createBook(
                         title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                         categoryName: category,
                         skinId: cover.id
                     )
-//                    try await env.documentStore.saveNotebook(notebook)
                     await MainActor.run {
                         isCreating = false
                         dismiss()
@@ -372,7 +394,7 @@ struct CreateNotebookView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Text("创建")
+                    Text(localized: "create_journal.create_btn")
                         .font(.system(size: 16, weight: .semibold))
                 }
             }
@@ -381,10 +403,11 @@ struct CreateNotebookView: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(hex: "FF5BA8"))
+                    .fill(AppTheme.Colors.primaryColor)
             )
         }
         .buttonStyle(.plain)
+        .shadow(color: AppTheme.Colors.shadowColor, radius: 6,x: 4,y: 4)
         .disabled(!isCreateEnabled || isCreating)
         .opacity((isCreateEnabled && !isCreating) ? 1 : 0.5)
         .padding(.horizontal, 32)

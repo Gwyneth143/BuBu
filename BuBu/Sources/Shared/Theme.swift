@@ -5,78 +5,51 @@ enum AppTheme {
 
     struct Colors {
         /// 应用通用背景色（如书架页浅米色背景）
-        static let appBackground = Color(red: 1.0, green: 0.97, blue: 0.94)
-        /// 书架木板颜色
-        static let shelfWood = Color(red: 0.93, green: 0.76, blue: 0.63)
-        /// 通用卡片 / 搜索框背景
-        static let cardBackground = Color.white
+//        static let appBackground = Color(red: 1.0, green: 0.97, blue: 0.94)
+        static let appBackground = Color.init(hex: "F4F9F4")
+        /// 主色 (Primary)
+        static let primaryColor = Color.init(hex: "A9DFBF")
+        /// 深色主色 (Primary Dark)
+        static let primaryDarkColor = Color.init(hex: "7D9A89")
+        /// 卡片/纸张色 (Surface)
+        static let surfaceColor = Color.init(hex: "FFFFFF")
+        /// 线条色
+        static let lineColor = Color.init(hex: "2C3E50")
+        /// 边框色
+        static let borderColor = Color.init(hex: "E0E0E0")
+        /// 高亮色
+        static let highlightColor = Color.init(hex: "F7DC6F")
+        /// 辅助/警示色
+        static let warningColor = Color.init(hex: "E6B0AA")
+        
+        ///导航栏
+        static let navBackgroundColor = Color.init(hex: "F4F9F4")
+        static let navTitleColor = Color.init(hex: "2C3E50")
+        
+        // 阴影
+        static let shadowColor = Color.init(hex: "7D9A89")
+        static let shadowBlockColor = Color.init(hex: "D5E6D5")
+        
+        // 文字
+        static let titleColor = Color.init(hex: "2C3E50")
+        static let subtitleColor = Color.init(hex: "5C5C5C")
         /// Tab 选中高亮（粉色）
-        static let tabHighlight = Color.init(hex: "FF7EB6")
+//        static let tabHighlight = Color.init(hex: "FF7EB6")B9C3B2
+//        static let tabHighlight = Color.init(hex: "A9DFBF")
         /// 分割线颜色
-        static let divider = Color.gray.opacity(0.2)
+        static let divider = Color.init(hex: "2C3E50")
+//        static let divider = Color.gray.opacity(0.2)
     }
 
     struct Fonts {
-        static let title = Font.system(size: 24, weight: .bold, design: .rounded)
-        static let sectionTitle = Font.system(size: 18, weight: .semibold, design: .rounded)
+        static let navTitle = Font.system(size: 20, weight: .heavy, design: .rounded)
+//        static let title = Font.system(size: 20, weight: .heavy, design: .rounded)
+//        static let sectionTitle = Font.system(size: 18, weight: .semibold, design: .rounded)
+        static let headingText = Font.system(size: 12, weight: .semibold, design: .rounded)
         static let body = Font.system(size: 15, weight: .regular, design: .rounded)
-        static let bookshelfTitle = Font.system(size: 20, weight: .heavy, design: .rounded)
+//        static let bookshelfTitle = Font.system(size: 20, weight: .heavy, design: .rounded)
     }
-
-    struct Gradients {
-        private static let start = Color(hex: "FFFFFF")
-
-        /// 蓝色
-        static let blue = LinearGradient(
-            colors: [start, Color(hex: "3994EF")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 橙色
-        static let orange = LinearGradient(
-            colors: [start, Color(hex: "FDBA74")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 绿色薄荷
-        static let mint = LinearGradient(
-            colors: [start, Color(hex: "6EE7B7")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 紫色
-        static let purple = LinearGradient(
-            colors: [start, Color(hex: "C084FC")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 黄色
-        static let yellow = LinearGradient(
-            colors: [start, Color(hex: "FFCC00")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 粉色
-        static let pink = LinearGradient(
-            colors: [start, Color(hex: "FFD1DC")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        /// 鲜绿色
-        static let green = LinearGradient(
-            colors: [start, Color(hex: "33CC00")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        static let all: [LinearGradient] = [blue, orange, mint, purple, yellow, pink, green]
-    }
+    
 }
 
 extension Color {

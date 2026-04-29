@@ -5,17 +5,17 @@ struct ConfirmModalView: View {
     var title: String
     var message: String?
     var iconName: String = "questionmark.circle.fill"
-    var cancelTitle: String = "取消"
-    var confirmTitle: String = "确定"
-    var confirmColor: Color = AppTheme.Colors.tabHighlight
+    var cancelTitle: String = String.localized("common.cancel")
+    var confirmTitle: String = String.localized("common.confirm")
+    var confirmColor: Color = AppTheme.Colors.primaryColor
     var onCancel: () -> Void
     var onConfirm: () -> Void
 
     private let titleColor = Color(hex: "1A1A1A")
     private let messageColor = Color(hex: "5C5C5C")
     private let borderGray = Color(hex: "E0E0E0")
-    private let iconBg = Color(hex: "FF5BA8").opacity(0.2)
-    private let iconTint = Color(hex: "E91E63")
+    private let iconBg = AppTheme.Colors.appBackground
+    private let iconTint = AppTheme.Colors.primaryColor
 
     var body: some View {
         ZStack {

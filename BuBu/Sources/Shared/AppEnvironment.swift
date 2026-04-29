@@ -65,3 +65,8 @@ extension AppEnvironment {
     }
 }
 
+extension Notification.Name {
+    /// iCloud 数据恢复到本地后派发，供各业务页立即刷新本地视图。
+    static let cloudDataDidRestore = Notification.Name("cloudDataDidRestore")
+}
+

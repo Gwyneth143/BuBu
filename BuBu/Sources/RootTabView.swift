@@ -2,8 +2,11 @@ import SwiftUI
 
 struct RootTabView: View {
     @EnvironmentObject private var env: AppEnvironment
+    @AppStorage("icloud.uploadEnabled") private var iCloudUploadEnabled = false
     @State private var selectedTab: Tab = .library
     @State private var isTabBarHidden: Bool = false
+    @State private var hasAttemptedCloudRestore = false
+    @State private var showLoginSheet = false
 
     enum Tab: CaseIterable {
         case library
@@ -13,10 +16,10 @@ struct RootTabView: View {
 
         var title: String {
             switch self {
-            case .library: return "Library"
-            case .capture: return "Capture"
-            case .workshop: return "Workshop"
-            case .profile: return "Profile"
+            case .library: return String.localized("tab.library")
+            case .capture: return String.localized("tab.capture")
+            case .workshop: return String.localized("tab.workshop")
+            case .profile: return String.localized("tab.profile")
             }
         }
 
@@ -77,6 +80,9 @@ struct RootTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .environment(\.tabBarHidden, $isTabBarHidden)
             .environment(\.rootTabSelection, $selectedTab)
+            .environment(\.presentLogin) {
+                showLoginSheet = true
+            }
 
             // 自定义 TabBar
             VStack(spacing: 0) {
@@ -100,7 +106,7 @@ struct RootTabView: View {
                                     .font(.caption2)
                                     .foregroundColor(
                                         selectedTab == tab
-                                        ? AppTheme.Colors.tabHighlight
+                                        ? AppTheme.Colors.primaryColor
                                         : .secondary
                                     )
                             }
@@ -116,15 +122,32 @@ struct RootTabView: View {
             .opacity(isTabBarHidden ? 0 : 1)
             .animation(.easeInOut(duration: 0.2), value: isTabBarHidden)
         }
-        // 登录拦截：未登录时，全局弹出登录页，覆盖一切点击
-        .fullScreenCover(
-            isPresented: Binding(
-                get: { !env.session.isLoggedIn },
-                set: { _ in }
-            )
-        ) {
+        .fullScreenCover(isPresented: $showLoginSheet) {
             LoginView()
                 .environmentObject(env)
+        }
+        .onChange(of: env.session.isLoggedIn) { loggedIn in
+            guard loggedIn else { return }
+            attemptCloudRestoreIfNeeded()
+        }
+        .onChange(of: iCloudUploadEnabled) { enabled in
+            guard enabled, env.session.isLoggedIn else { return }
+            attemptCloudRestoreIfNeeded()
+        }
+        /// 书架上的子页（如册子详情）会隐藏 TabBar；切到其他 Tab 时子页可能仍挂在栈上而不触发 onDisappear，需在此统一恢复。
+        .onChange(of: selectedTab) { newTab in
+            if newTab != .library {
+                isTabBarHidden = false
+            }
+        }
+    }
+
+    private func attemptCloudRestoreIfNeeded() {
+        guard iCloudUploadEnabled, !hasAttemptedCloudRestore else { return }
+        hasAttemptedCloudRestore = true
+        Task {
+            try? await env.cloudSyncService.enableSyncIfNeeded()
+            try? await env.cloudSyncService.restoreFromCloud(documentStore: env.documentStore)
         }
     }
 }
@@ -143,9 +166,19 @@ extension EnvironmentValues {
         get { self[RootTabSelectionKey.self] }
         set { self[RootTabSelectionKey.self] = newValue }
     }
+
+    /// 未登录时由子页面调用，弹出全屏登录（Tab 仍可切换）。
+    var presentLogin: () -> Void {
+        get { self[PresentLoginKey.self] }
+        set { self[PresentLoginKey.self] = newValue }
+    }
 }
 
 private struct RootTabSelectionKey: EnvironmentKey {
     static let defaultValue: Binding<RootTabView.Tab>? = nil
+}
+
+private struct PresentLoginKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
 }
 

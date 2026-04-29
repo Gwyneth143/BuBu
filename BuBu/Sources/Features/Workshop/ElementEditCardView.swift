@@ -18,16 +18,16 @@ struct ElementEditCard: View {
 //        }
 //    }
 
-    private var isTextContent: Bool {
-        guard let item = item else { return false }
-        if case .text = item.content { return true }
-        return false
-    }
+//    private var isTextContent: Bool {
+//        guard let item = item else { return false }
+//        if case .text = item.content { return true }
+//        return false
+//    }
 
-    private var currentTextIsSerif: Bool {
-        guard let item = item, case .text(_, let isSerif, _) = item.content else { return true }
-        return isSerif
-    }
+//    private var currentTextIsSerif: Bool {
+//        guard let item = item, case .text(_, let isSerif, _) = item.content else { return true }
+//        return isSerif
+//    }
 
     private let colorOptions: [String] = [
         "DBEAFE", "FED7E2", "E9D5FF", "BBF7D0", "FEF3C7", "FED7AA"
@@ -75,18 +75,18 @@ struct ElementEditCard: View {
                     .tint(.blue)
             }
 
-            if isTextContent {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("FONT")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "6B7280"))
-                        .tracking(0.5)
-                    HStack(spacing: 12) {
-                        fontOption(title: "Artistic Serif", isSerif: true)
-                        fontOption(title: "Minimalist Mono", isSerif: false)
-                    }
-                }
-            }
+//            if isTextContent {
+//                VStack(alignment: .leading, spacing: 6) {
+//                    Text("FONT")
+//                        .font(.system(size: 11, weight: .medium))
+//                        .foregroundColor(Color(hex: "6B7280"))
+//                        .tracking(0.5)
+//                    HStack(spacing: 12) {
+//                        fontOption(title: "Artistic Serif", isSerif: true)
+//                        fontOption(title: "Minimalist Mono", isSerif: false)
+//                    }
+//                }
+//            }
 
 //            VStack(alignment: .leading, spacing: 6) {
 //                Text("COLOR")
@@ -150,31 +150,31 @@ struct ElementEditCard: View {
 //        }
 //    }
 
-    @ViewBuilder
-    private func fontOption(title: String, isSerif: Bool) -> some View {
-        let isSelected = currentTextIsSerif == isSerif
-        Button {
-            setTextFont(isSerif: isSerif)
-        } label: {
-            Text(title)
-                .font(isSerif ? .system(size: 13, weight: .regular, design: .serif).italic() : .system(size: 13, weight: .medium))
-                .foregroundColor(isSelected ? .white : Color(hex: "6B7280"))
-                .lineLimit(1)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected ? Color.blue : Color(hex: "F3F4F6"))
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func setTextFont(isSerif: Bool) {
-        guard let i = index else { return }
-        if case .text(let string, _, let colorHex) = items[i].content {
-            items[i].content = .text(string: string, isSerif: isSerif, colorHex: colorHex)
-        }
-    }
+//    @ViewBuilder
+//    private func fontOption(title: String, isSerif: Bool) -> some View {
+//        let isSelected = currentTextIsSerif == isSerif
+//        Button {
+//            setTextFont(isSerif: isSerif)
+//        } label: {
+//            Text(title)
+//                .font(isSerif ? .system(size: 13, weight: .regular, design: .serif).italic() : .system(size: 13, weight: .medium))
+//                .foregroundColor(isSelected ? .white : Color(hex: "6B7280"))
+//                .lineLimit(1)
+//                .padding(.horizontal, 14)
+//                .padding(.vertical, 10)
+//                .frame(maxWidth: .infinity)
+//                .background(
+//                    RoundedRectangle(cornerRadius: 14)
+//                        .fill(isSelected ? Color.blue : Color(hex: "F3F4F6"))
+//                )
+//        }
+//        .buttonStyle(.plain)
+//    }
+//
+//    private func setTextFont(isSerif: Bool) {
+//        guard let i = index else { return }
+//        if case .text(let string, _, let colorHex) = items[i].content {
+//            items[i].content = .text(string: string, isSerif: isSerif, colorHex: colorHex)
+//        }
+//    }
 }
