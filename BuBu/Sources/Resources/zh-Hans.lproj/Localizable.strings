@@ -172,6 +172,11 @@
 "profile.icloud_upload_hint" = "手帐数据默认仅保存在本地，或由你手动同步至 iCloud，不会自动上传云端。请妥善保留原始数据，卸载 App 后本地数据可能丢失。";
 "profile.up_to_date" = "已是最新";
 "profile.privacy_security" = "隐私与安全";
+"profile.settings" = "设置";
+"profile.account_security" = "账户安全";
+"profile.delete_account" = "注销账户";
+"profile.delete_account_confirm_title" = "注销账户？";
+"profile.delete_account_confirm_message" = "注销后无法恢复，账户下的数据将被移除。是否继续？";
 "profile.biometric_lock" = "生物识别锁定";
 "profile.passcode" = "密码保护";
 "profile.default_user_name" = "用户";

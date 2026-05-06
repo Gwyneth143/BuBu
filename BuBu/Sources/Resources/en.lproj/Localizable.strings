@@ -172,6 +172,11 @@
 "profile.icloud_upload_hint" = "Your journal data is stored locally by default, or synced to iCloud only when you do it manually. It is not uploaded to cloud automatically. Keep your original data safe, as local data may be lost after uninstalling the app.";
 "profile.up_to_date" = "Up to date";
 "profile.privacy_security" = "PRIVACY & SECURITY";
+"profile.settings" = "Settings";
+"profile.account_security" = "Account Security";
+"profile.delete_account" = "Delete Account";
+"profile.delete_account_confirm_title" = "Delete account?";
+"profile.delete_account_confirm_message" = "This action cannot be undone. Account data will be removed. Continue?";
 "profile.biometric_lock" = "Biometric Lock";
 "profile.passcode" = "Passcode Protection";
 "profile.default_user_name" = "User";

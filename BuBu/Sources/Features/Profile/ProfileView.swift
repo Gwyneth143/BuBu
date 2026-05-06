@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var showingLogoutConfirm = false
     @State private var showingLogoutSyncPrompt = false
     @State private var showingDeleteCloudDataConfirm = false
+    @State private var showingSettingsSheet = false
     @State private var passcodeFlow: ProfilePasscodeFlow = .set
     @State private var passcodeInput = ""
     @State private var passcodeConfirmInput = ""
@@ -35,6 +36,7 @@ struct ProfileView: View {
                         }
                         iCloudUploadToggleRow
                         privacySection
+                        settingsSection
                         legalSection
                         logoutSection
                     } else {
@@ -61,6 +63,14 @@ struct ProfileView: View {
                 onSubmit: { submitPasscodeFlow() },
                 onCancel: { cancelPasscodeFlow() }
             )
+        }
+        .fullScreenCover(isPresented: $showingSettingsSheet) {
+            CompatibleNavigationStack {
+                ProfileSettingsView(onAccountDeleted: {
+                    showingSettingsSheet = false
+                })
+                .environmentObject(env)
+            }
         }
         .overlay {
             if showingLogoutConfirm {
@@ -588,6 +598,31 @@ struct ProfileView: View {
     }
 
     // MARK: - Privacy
+
+    private var settingsSection: some View {
+        Button {
+            showingSettingsSheet = true
+        } label: {
+            HStack {
+                Image(systemName: "gearshape")
+                Text(localized: "profile.settings")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .font(.subheadline)
+            .foregroundColor(.primary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(.plain)
+    }
 
     private var privacySection: some View {
         VStack(alignment: .leading, spacing: 12) {
